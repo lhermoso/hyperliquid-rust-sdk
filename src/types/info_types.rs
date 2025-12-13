@@ -680,3 +680,256 @@ pub struct TokenDetails {
     #[serde(default)]
     pub market_cap: Option<String>,
 }
+
+// ==================== Phase 3 New Types ====================
+
+// --- Staking/Delegation Types ---
+
+/// Response for delegatorSummary - staking summary
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DelegatorSummary {
+    /// Total delegated amount in wei
+    #[serde(default)]
+    pub delegated: Option<String>,
+    /// Total undelegating amount in wei
+    #[serde(default)]
+    pub undelegating: Option<String>,
+    /// Total rewards earned
+    #[serde(default)]
+    pub total_rewards: Option<String>,
+    /// Pending rewards to claim
+    #[serde(default)]
+    pub pending_rewards: Option<String>,
+    /// Number of validators delegated to
+    #[serde(default)]
+    pub n_validators: Option<u32>,
+}
+
+/// Response for delegations - list of staking delegations
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Delegation {
+    /// Validator address
+    pub validator: Address,
+    /// Delegated amount in wei
+    pub amount: String,
+    /// Locked until timestamp (for undelegating)
+    #[serde(default)]
+    pub locked_until: Option<u64>,
+    /// Pending rewards
+    #[serde(default)]
+    pub pending_rewards: Option<String>,
+}
+
+/// Response for delegatorRewards - historic staking rewards
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DelegatorReward {
+    /// Timestamp of reward
+    pub time: u64,
+    /// Validator address
+    pub validator: Address,
+    /// Reward amount
+    pub amount: String,
+    /// Transaction hash
+    #[serde(default)]
+    pub hash: Option<String>,
+}
+
+/// Response for delegatorHistory - comprehensive staking history
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DelegatorHistoryEntry {
+    /// Timestamp of action
+    pub time: u64,
+    /// Type of action (delegate, undelegate, claim, etc.)
+    #[serde(rename = "type")]
+    pub action_type: String,
+    /// Validator address
+    #[serde(default)]
+    pub validator: Option<Address>,
+    /// Amount in wei
+    #[serde(default)]
+    pub amount: Option<String>,
+    /// Transaction hash
+    #[serde(default)]
+    pub hash: Option<String>,
+}
+
+// --- Deployment Types ---
+
+/// Response for perpDeployAuctionStatus
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PerpDeployAuctionStatus {
+    /// Current auction state
+    #[serde(default)]
+    pub state: Option<String>,
+    /// Auction info
+    #[serde(default)]
+    pub auction: Option<PerpDeployAuction>,
+    /// DEX info
+    #[serde(default)]
+    pub dexes: Option<Vec<PerpDex>>,
+}
+
+/// Perp deployment auction info
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PerpDeployAuction {
+    /// Coin being auctioned
+    #[serde(default)]
+    pub coin: Option<String>,
+    /// Starting price
+    #[serde(default)]
+    pub start_px: Option<String>,
+    /// Current bid
+    #[serde(default)]
+    pub current_bid: Option<String>,
+    /// End time
+    #[serde(default)]
+    pub end_time: Option<u64>,
+}
+
+/// Response for spotDeployState
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeployState {
+    /// Token deploy state
+    #[serde(default)]
+    pub tokens: Option<Vec<SpotTokenDeployState>>,
+    /// User's deploy state
+    #[serde(default)]
+    pub user_state: Option<SpotUserDeployState>,
+}
+
+/// Spot token deployment state
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotTokenDeployState {
+    /// Token name
+    pub token: String,
+    /// Deployment state
+    pub state: String,
+    /// Genesis info
+    #[serde(default)]
+    pub genesis: Option<SpotGenesisInfo>,
+}
+
+/// Spot genesis info
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotGenesisInfo {
+    /// Max supply
+    #[serde(default)]
+    pub max_supply: Option<String>,
+    /// Hyperliquidity enabled
+    #[serde(default)]
+    pub hyperliquidity: Option<bool>,
+}
+
+/// Spot user deployment state
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotUserDeployState {
+    /// Tokens being deployed by user
+    #[serde(default)]
+    pub deploying: Option<Vec<String>>,
+    /// Tokens deployed by user
+    #[serde(default)]
+    pub deployed: Option<Vec<String>>,
+}
+
+/// Response for spotPairDeployAuctionStatus
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotPairDeployAuctionStatus {
+    /// Base token
+    #[serde(default)]
+    pub base: Option<String>,
+    /// Quote token
+    #[serde(default)]
+    pub quote: Option<String>,
+    /// Auction state
+    #[serde(default)]
+    pub state: Option<String>,
+    /// Current bid
+    #[serde(default)]
+    pub current_bid: Option<String>,
+    /// End time
+    #[serde(default)]
+    pub end_time: Option<u64>,
+}
+
+// --- Other Types ---
+
+/// Response for perpDexs - available perpetual DEXs
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PerpDex {
+    /// DEX identifier
+    pub dex: u32,
+    /// DEX name
+    pub name: String,
+    /// Coins listed on this DEX
+    #[serde(default)]
+    pub coins: Option<Vec<String>>,
+}
+
+/// Response for userDexAbstraction
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UserDexAbstraction {
+    /// Whether DEX abstraction is enabled
+    pub enabled: bool,
+    /// Agent address
+    #[serde(default)]
+    pub agent: Option<Address>,
+    /// Enabled dexes
+    #[serde(default)]
+    pub dexes: Option<Vec<u32>>,
+}
+
+/// Response for userToMultiSigSigners
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MultiSigSignerInfo {
+    /// Signer address
+    pub address: Address,
+    /// Signer weight
+    pub weight: u32,
+}
+
+/// Multi-sig user info
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MultiSigUserInfo {
+    /// Threshold required for approval
+    pub threshold: u32,
+    /// List of signers
+    pub signers: Vec<MultiSigSignerInfo>,
+}
+
+/// Response for userTwapSliceFills - TWAP execution fills
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TwapSliceFill {
+    /// TWAP order ID
+    pub twap_id: u64,
+    /// Asset index
+    pub asset: u32,
+    /// Coin name
+    pub coin: String,
+    /// Fill price
+    pub px: String,
+    /// Fill size
+    pub sz: String,
+    /// Side (buy/sell)
+    pub side: String,
+    /// Fill time
+    pub time: u64,
+    /// Transaction hash
+    #[serde(default)]
+    pub hash: Option<String>,
+}

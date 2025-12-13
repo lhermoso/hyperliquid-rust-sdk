@@ -14,12 +14,15 @@ use serde_json::json;
 use crate::constants::Network;
 use crate::errors::HyperliquidError;
 use crate::types::info_types::{
-    CandlesSnapshotResponse, ExtraAgent, FrontendOpenOrder, FundingHistoryResponse,
-    HistoricalOrder, L2SnapshotResponse, Meta, MetaAndAssetCtxs, NonFundingLedgerUpdate,
-    OpenOrdersResponse, OrderStatusResponse, Portfolio, RecentTradesResponse,
-    ReferralResponse, SpotMeta, SpotMetaAndAssetCtxs, SubAccount, TokenDetails,
-    UserFeesResponse, UserFillByTime, UserFillsResponse, UserFundingResponse,
-    UserRateLimit, UserRole, UserStateResponse, UserTokenBalanceResponse, VaultEquity,
+    CandlesSnapshotResponse, Delegation, DelegatorHistoryEntry, DelegatorReward,
+    DelegatorSummary, ExtraAgent, FrontendOpenOrder, FundingHistoryResponse,
+    HistoricalOrder, L2SnapshotResponse, Meta, MetaAndAssetCtxs, MultiSigUserInfo,
+    NonFundingLedgerUpdate, OpenOrdersResponse, OrderStatusResponse,
+    PerpDeployAuctionStatus, PerpDex, Portfolio, RecentTradesResponse, ReferralResponse,
+    SpotDeployState, SpotMeta, SpotMetaAndAssetCtxs, SpotPairDeployAuctionStatus,
+    SubAccount, TokenDetails, TwapSliceFill, UserDexAbstraction, UserFeesResponse,
+    UserFillByTime, UserFillsResponse, UserFundingResponse, UserRateLimit, UserRole,
+    UserStateResponse, UserTokenBalanceResponse, VaultEquity,
 };
 use crate::types::Symbol;
 
@@ -464,6 +467,165 @@ impl InfoProvider {
         let request = json!({
             "type": "tokenDetails",
             "tokenId": token_id.into()
+        });
+        self.request(request).await
+    }
+
+    // ==================== Phase 3 New Methods ====================
+
+    // --- Staking/Delegation Methods ---
+
+    /// Get staking summary for a user (delegatorSummary)
+    ///
+    /// Returns total delegated amount, undelegating amount, and rewards.
+    pub async fn delegator_summary(
+        &self,
+        user: Address,
+    ) -> Result<DelegatorSummary, HyperliquidError> {
+        let request = json!({
+            "type": "delegatorSummary",
+            "user": user
+        });
+        self.request(request).await
+    }
+
+    /// Get staking delegations for a user
+    ///
+    /// Returns list of validators the user has delegated to.
+    pub async fn delegations(
+        &self,
+        user: Address,
+    ) -> Result<Vec<Delegation>, HyperliquidError> {
+        let request = json!({
+            "type": "delegations",
+            "user": user
+        });
+        self.request(request).await
+    }
+
+    /// Get historic staking rewards for a user
+    ///
+    /// Returns list of reward events.
+    pub async fn delegator_rewards(
+        &self,
+        user: Address,
+    ) -> Result<Vec<DelegatorReward>, HyperliquidError> {
+        let request = json!({
+            "type": "delegatorRewards",
+            "user": user
+        });
+        self.request(request).await
+    }
+
+    /// Get comprehensive staking history for a user
+    ///
+    /// Returns all staking-related actions (delegate, undelegate, claim, etc.).
+    pub async fn delegator_history(
+        &self,
+        user: Address,
+    ) -> Result<Vec<DelegatorHistoryEntry>, HyperliquidError> {
+        let request = json!({
+            "type": "delegatorHistory",
+            "user": user
+        });
+        self.request(request).await
+    }
+
+    // --- Deployment Methods ---
+
+    /// Get perpetual deployment auction status
+    ///
+    /// Returns current auction state and available DEXs.
+    pub async fn perp_deploy_auction_status(
+        &self,
+    ) -> Result<PerpDeployAuctionStatus, HyperliquidError> {
+        let request = json!({
+            "type": "perpDeployAuctionStatus"
+        });
+        self.request(request).await
+    }
+
+    /// Get spot deployment state for a user
+    ///
+    /// Returns tokens being deployed and user's deploy state.
+    pub async fn spot_deploy_state(
+        &self,
+        user: Address,
+    ) -> Result<SpotDeployState, HyperliquidError> {
+        let request = json!({
+            "type": "spotDeployState",
+            "user": user
+        });
+        self.request(request).await
+    }
+
+    /// Get spot pair deployment auction status
+    ///
+    /// * `base` - Base token
+    /// * `quote` - Quote token
+    pub async fn spot_pair_deploy_auction_status(
+        &self,
+        base: impl Into<String>,
+        quote: impl Into<String>,
+    ) -> Result<SpotPairDeployAuctionStatus, HyperliquidError> {
+        let request = json!({
+            "type": "spotPairDeployAuctionStatus",
+            "base": base.into(),
+            "quote": quote.into()
+        });
+        self.request(request).await
+    }
+
+    // --- Other Methods ---
+
+    /// Get available perpetual DEXs
+    ///
+    /// Returns list of DEXs and their listed coins.
+    pub async fn perp_dexs(&self) -> Result<Vec<PerpDex>, HyperliquidError> {
+        let request = json!({
+            "type": "perpDexs"
+        });
+        self.request(request).await
+    }
+
+    /// Get DEX abstraction state for a user
+    ///
+    /// Returns whether DEX abstraction is enabled and which DEXs.
+    pub async fn user_dex_abstraction(
+        &self,
+        user: Address,
+    ) -> Result<UserDexAbstraction, HyperliquidError> {
+        let request = json!({
+            "type": "userDexAbstraction",
+            "user": user
+        });
+        self.request(request).await
+    }
+
+    /// Get multi-sig signers for a multi-sig user
+    ///
+    /// Returns threshold and list of signers with their weights.
+    pub async fn user_to_multi_sig_signers(
+        &self,
+        multi_sig_user: Address,
+    ) -> Result<MultiSigUserInfo, HyperliquidError> {
+        let request = json!({
+            "type": "userToMultiSigSigners",
+            "user": multi_sig_user
+        });
+        self.request(request).await
+    }
+
+    /// Get TWAP slice fills for a user
+    ///
+    /// Returns fills from TWAP order executions.
+    pub async fn user_twap_slice_fills(
+        &self,
+        user: Address,
+    ) -> Result<Vec<TwapSliceFill>, HyperliquidError> {
+        let request = json!({
+            "type": "userTwapSliceFills",
+            "user": user
         });
         self.request(request).await
     }

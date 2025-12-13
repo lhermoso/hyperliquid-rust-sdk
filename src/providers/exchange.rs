@@ -19,13 +19,56 @@ use crate::{
     signers::{HyperliquidSignature, HyperliquidSigner},
     types::{
         actions::{
-            Agent, AgentEnableDexAbstraction, ApproveAgent, ApproveBuilderFee,
-            BulkCancel, BulkCancelCloid, BulkModify, BulkOrder, BulkTwapOrder,
-            ClassTransfer, ConvertToMultiSigUser, CreateSubAccount, MultiSig,
-            MultiSigSignature, MultiSigSigner, ScheduleCancel, SetReferrer, SpotSend,
-            SpotUser, SubAccountSpotTransfer, SubAccountTransfer, TwapCancel, TwapOrder,
-            UpdateIsolatedMargin, UpdateLeverage, UsdClassTransfer, UsdSend,
-            VaultTransfer, Withdraw,
+            Agent,
+            AgentEnableDexAbstraction,
+            ApproveAgent,
+            ApproveBuilderFee,
+            BulkCancel,
+            BulkCancelCloid,
+            BulkModify,
+            BulkOrder,
+            BulkTwapOrder,
+            // Phase 3 imports
+            CSignerJailSelf,
+            CSignerUnjailSelf,
+            CValidatorChangeProfile,
+            CValidatorRegister,
+            CValidatorUnregister,
+            ClassTransfer,
+            ConvertToMultiSigUser,
+            CreateSubAccount,
+            MultiSig,
+            MultiSigSignature,
+            MultiSigSigner,
+            Noop,
+            PerpDeployRegisterAsset,
+            PerpDeploySetOracle,
+            ScheduleCancel,
+            SetReferrer,
+            SpotDeployEnableFreezePrivilege,
+            SpotDeployEnableQuoteToken,
+            SpotDeployFreezeUser,
+            SpotDeployGenesis,
+            SpotDeployRegisterHyperliquidity,
+            SpotDeployRegisterSpot,
+            SpotDeployRegisterToken,
+            SpotDeployRevokeFreezePrivilege,
+            SpotDeploySetDeployerTradingFeeShare,
+            SpotDeployUserGenesis,
+            SpotSend,
+            SpotUser,
+            SubAccountSpotTransfer,
+            SubAccountTransfer,
+            TokenDelegate,
+            TwapCancel,
+            TwapOrder,
+            UpdateIsolatedMargin,
+            UpdateLeverage,
+            UsdClassTransfer,
+            UsdSend,
+            UseBigBlocks,
+            VaultTransfer,
+            Withdraw,
         },
         eip712::HyperliquidAction,
         requests::*,
@@ -1006,6 +1049,376 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .await
     }
 
+    // ==================== Phase 3 New Actions ====================
+
+    // --- Spot Deployment Actions ---
+
+    /// Register a new spot token
+    ///
+    /// * `token_name` - Token name/symbol
+    /// * `sz_decimals` - Size decimals for trading
+    /// * `wei_decimals` - Wei decimals for on-chain representation
+    /// * `max_gas` - Maximum gas for deployment
+    /// * `full_name` - Optional full name of the token
+    pub async fn spot_deploy_register_token(
+        &self,
+        token_name: impl Into<String>,
+        sz_decimals: u32,
+        wei_decimals: u32,
+        max_gas: impl Into<String>,
+        full_name: Option<String>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = SpotDeployRegisterToken {
+            token_name: token_name.into(),
+            sz_decimals,
+            wei_decimals,
+            max_gas: max_gas.into(),
+            full_name,
+        };
+        self.send_l1_action("spotDeployRegisterToken", &action)
+            .await
+    }
+
+    /// User genesis for spot deployment
+    ///
+    /// * `token` - Token identifier
+    /// * `user_and_wei` - List of (user address, wei amount) for initial distribution
+    /// * `existing_token_and_wei` - Optional existing token and wei to use
+    pub async fn spot_deploy_user_genesis(
+        &self,
+        token: impl Into<String>,
+        user_and_wei: Vec<(String, String)>,
+        existing_token_and_wei: Option<(String, String)>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = SpotDeployUserGenesis {
+            token: token.into(),
+            user_and_wei,
+            existing_token_and_wei,
+        };
+        self.send_l1_action("spotDeployUserGenesis", &action).await
+    }
+
+    /// Freeze or unfreeze a user in spot deployment
+    ///
+    /// * `token` - Token identifier
+    /// * `user` - User address to freeze/unfreeze
+    /// * `freeze` - Whether to freeze (true) or unfreeze (false)
+    pub async fn spot_deploy_freeze_user(
+        &self,
+        token: impl Into<String>,
+        user: Address,
+        freeze: bool,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = SpotDeployFreezeUser {
+            token: token.into(),
+            user: format!("{:#x}", user),
+            freeze,
+        };
+        self.send_l1_action("spotDeployFreezeUser", &action).await
+    }
+
+    /// Enable freeze privilege for a token
+    ///
+    /// * `token` - Token identifier
+    pub async fn spot_deploy_enable_freeze_privilege(
+        &self,
+        token: impl Into<String>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = SpotDeployEnableFreezePrivilege {
+            token: token.into(),
+        };
+        self.send_l1_action("spotDeployEnableFreezePrivilege", &action)
+            .await
+    }
+
+    /// Revoke freeze privilege for a token
+    ///
+    /// * `token` - Token identifier
+    pub async fn spot_deploy_revoke_freeze_privilege(
+        &self,
+        token: impl Into<String>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = SpotDeployRevokeFreezePrivilege {
+            token: token.into(),
+        };
+        self.send_l1_action("spotDeployRevokeFreezePrivilege", &action)
+            .await
+    }
+
+    /// Enable quote token for spot deployment
+    ///
+    /// * `token` - Token identifier to enable as quote
+    pub async fn spot_deploy_enable_quote_token(
+        &self,
+        token: impl Into<String>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = SpotDeployEnableQuoteToken {
+            token: token.into(),
+        };
+        self.send_l1_action("spotDeployEnableQuoteToken", &action)
+            .await
+    }
+
+    /// Genesis for spot deployment
+    ///
+    /// * `token` - Token identifier
+    /// * `max_supply` - Maximum supply
+    /// * `no_hyperliquidity` - Whether to disable hyperliquidity
+    pub async fn spot_deploy_genesis(
+        &self,
+        token: impl Into<String>,
+        max_supply: impl Into<String>,
+        no_hyperliquidity: Option<bool>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = SpotDeployGenesis {
+            token: token.into(),
+            max_supply: max_supply.into(),
+            no_hyperliquidity,
+        };
+        self.send_l1_action("spotDeployGenesis", &action).await
+    }
+
+    /// Register a spot trading pair
+    ///
+    /// * `base_token` - Base token identifier
+    /// * `quote_token` - Quote token identifier
+    pub async fn spot_deploy_register_spot(
+        &self,
+        base_token: impl Into<String>,
+        quote_token: impl Into<String>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = SpotDeployRegisterSpot {
+            base_token: base_token.into(),
+            quote_token: quote_token.into(),
+        };
+        self.send_l1_action("spotDeployRegisterSpot", &action).await
+    }
+
+    /// Register hyperliquidity for a spot pair
+    ///
+    /// * `spot` - Spot pair identifier
+    /// * `start_px` - Starting price
+    /// * `order_sz` - Order size
+    /// * `n_orders` - Number of orders
+    /// * `n_seeded_levels` - Number of seeded levels
+    pub async fn spot_deploy_register_hyperliquidity(
+        &self,
+        spot: impl Into<String>,
+        start_px: impl Into<String>,
+        order_sz: impl Into<String>,
+        n_orders: u32,
+        n_seeded_levels: u32,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = SpotDeployRegisterHyperliquidity {
+            spot: spot.into(),
+            start_px: start_px.into(),
+            order_sz: order_sz.into(),
+            n_orders,
+            n_seeded_levels,
+        };
+        self.send_l1_action("spotDeployRegisterHyperliquidity", &action)
+            .await
+    }
+
+    /// Set deployer trading fee share for a token
+    ///
+    /// * `token` - Token identifier
+    /// * `share` - Fee share as decimal string (e.g., "0.001" for 0.1%)
+    pub async fn spot_deploy_set_deployer_trading_fee_share(
+        &self,
+        token: impl Into<String>,
+        share: impl Into<String>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = SpotDeploySetDeployerTradingFeeShare {
+            token: token.into(),
+            share: share.into(),
+        };
+        self.send_l1_action("spotDeploySetDeployerTradingFeeShare", &action)
+            .await
+    }
+
+    // --- Perp Deployment Actions ---
+
+    /// Register a perpetual asset
+    ///
+    /// * `dex` - DEX identifier
+    /// * `max_gas` - Maximum gas for deployment
+    /// * `coin` - Coin name/symbol
+    /// * `sz_decimals` - Size decimals for trading
+    /// * `oracle_px` - Oracle price
+    /// * `margin_table_id` - Optional margin table ID
+    /// * `only_isolated` - Whether to use isolated margin only
+    /// * `schema` - Optional schema type
+    pub async fn perp_deploy_register_asset(
+        &self,
+        dex: u32,
+        max_gas: impl Into<String>,
+        coin: impl Into<String>,
+        sz_decimals: u32,
+        oracle_px: impl Into<String>,
+        margin_table_id: Option<u32>,
+        only_isolated: Option<bool>,
+        schema: Option<String>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = PerpDeployRegisterAsset {
+            dex,
+            max_gas: max_gas.into(),
+            coin: coin.into(),
+            sz_decimals,
+            oracle_px: oracle_px.into(),
+            margin_table_id,
+            only_isolated,
+            schema,
+        };
+        self.send_l1_action("perpDeployRegisterAsset", &action)
+            .await
+    }
+
+    /// Set oracle for perpetual asset
+    ///
+    /// * `dex` - DEX identifier
+    /// * `oracle_pxs` - Oracle prices
+    /// * `all_mark_pxs` - All mark prices
+    /// * `external_perp_pxs` - Optional external perp prices
+    pub async fn perp_deploy_set_oracle(
+        &self,
+        dex: u32,
+        oracle_pxs: Vec<String>,
+        all_mark_pxs: Vec<String>,
+        external_perp_pxs: Option<Vec<String>>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = PerpDeploySetOracle {
+            dex,
+            oracle_pxs,
+            all_mark_pxs,
+            external_perp_pxs,
+        };
+        self.send_l1_action("perpDeploySetOracle", &action).await
+    }
+
+    // --- Validator/Staking Actions ---
+
+    /// Unjail self (signer)
+    ///
+    /// Used to unjail a previously jailed signer.
+    pub async fn c_signer_unjail_self(&self) -> Result<ExchangeResponseStatus> {
+        let action = CSignerUnjailSelf {};
+        self.send_l1_action("cSignerUnjailSelf", &action).await
+    }
+
+    /// Jail self (signer)
+    ///
+    /// Used to voluntarily jail oneself as a signer.
+    pub async fn c_signer_jail_self(&self) -> Result<ExchangeResponseStatus> {
+        let action = CSignerJailSelf {};
+        self.send_l1_action("cSignerJailSelf", &action).await
+    }
+
+    /// Register as a validator
+    ///
+    /// * `node_ip` - Node IP address
+    /// * `name` - Validator name
+    /// * `description` - Validator description
+    /// * `delegations_disabled` - Whether delegations are disabled
+    /// * `commission_bps` - Commission in basis points
+    /// * `signer` - Signer address
+    /// * `unjailed` - Whether initially unjailed
+    /// * `initial_wei` - Initial wei stake
+    pub async fn c_validator_register(
+        &self,
+        node_ip: impl Into<String>,
+        name: impl Into<String>,
+        description: impl Into<String>,
+        delegations_disabled: bool,
+        commission_bps: u32,
+        signer: Address,
+        unjailed: bool,
+        initial_wei: impl Into<String>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = CValidatorRegister {
+            node_ip: node_ip.into(),
+            name: name.into(),
+            description: description.into(),
+            delegations_disabled,
+            commission_bps,
+            signer: format!("{:#x}", signer),
+            unjailed,
+            initial_wei: initial_wei.into(),
+        };
+        self.send_l1_action("cValidatorRegister", &action).await
+    }
+
+    /// Change validator profile
+    ///
+    /// All parameters are optional - only provided values will be updated.
+    pub async fn c_validator_change_profile(
+        &self,
+        node_ip: Option<String>,
+        name: Option<String>,
+        description: Option<String>,
+        unjailed: Option<bool>,
+        disable_delegations: Option<bool>,
+        commission_bps: Option<u32>,
+        signer: Option<Address>,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = CValidatorChangeProfile {
+            node_ip,
+            name,
+            description,
+            unjailed,
+            disable_delegations,
+            commission_bps,
+            signer: signer.map(|s| format!("{:#x}", s)),
+        };
+        self.send_l1_action("cValidatorChangeProfile", &action)
+            .await
+    }
+
+    /// Unregister as a validator
+    pub async fn c_validator_unregister(&self) -> Result<ExchangeResponseStatus> {
+        let action = CValidatorUnregister {};
+        self.send_l1_action("cValidatorUnregister", &action).await
+    }
+
+    /// Delegate tokens to a validator
+    ///
+    /// * `validator` - Validator address to delegate to
+    /// * `wei` - Amount in wei
+    /// * `is_undelegate` - Whether this is an undelegation (false = delegate, true = undelegate)
+    pub async fn token_delegate(
+        &self,
+        validator: Address,
+        wei: impl Into<String>,
+        is_undelegate: bool,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = TokenDelegate {
+            validator: format!("{:#x}", validator),
+            wei: wei.into(),
+            is_undelegate,
+        };
+        self.send_l1_action("tokenDelegate", &action).await
+    }
+
+    // --- Other Actions ---
+
+    /// Enable or disable large block mode
+    ///
+    /// * `enable` - Whether to enable (true) or disable (false) big blocks
+    pub async fn use_big_blocks(&self, enable: bool) -> Result<ExchangeResponseStatus> {
+        let action = UseBigBlocks { enable };
+        self.send_l1_action("useBigBlocks", &action).await
+    }
+
+    /// No-operation action
+    ///
+    /// Useful for testing or keeping connection alive.
+    ///
+    /// * `nonce` - Nonce for the action
+    pub async fn noop(&self, nonce: u64) -> Result<ExchangeResponseStatus> {
+        let action = Noop { nonce };
+        self.send_l1_action("noop", &action).await
+    }
+
     // ==================== Helper Methods ====================
 
     fn current_nonce() -> u64 {
@@ -1052,6 +1465,30 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             TwapOrder(&'a T),
             TwapCancel(&'a T),
             AgentEnableDexAbstraction(&'a T),
+            // Phase 3 new actions - Spot Deployment
+            SpotDeployRegisterToken(&'a T),
+            SpotDeployUserGenesis(&'a T),
+            SpotDeployFreezeUser(&'a T),
+            SpotDeployEnableFreezePrivilege(&'a T),
+            SpotDeployRevokeFreezePrivilege(&'a T),
+            SpotDeployEnableQuoteToken(&'a T),
+            SpotDeployGenesis(&'a T),
+            SpotDeployRegisterSpot(&'a T),
+            SpotDeployRegisterHyperliquidity(&'a T),
+            SpotDeploySetDeployerTradingFeeShare(&'a T),
+            // Phase 3 new actions - Perp Deployment
+            PerpDeployRegisterAsset(&'a T),
+            PerpDeploySetOracle(&'a T),
+            // Phase 3 new actions - Validator/Staking
+            CSignerUnjailSelf(&'a T),
+            CSignerJailSelf(&'a T),
+            CValidatorRegister(&'a T),
+            CValidatorChangeProfile(&'a T),
+            CValidatorUnregister(&'a T),
+            TokenDelegate(&'a T),
+            // Phase 3 new actions - Other
+            UseBigBlocks(&'a T),
+            Noop(&'a T),
         }
 
         // Wrap the action based on type
@@ -1082,6 +1519,40 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             "agentEnableDexAbstraction" => {
                 ActionWrapper::AgentEnableDexAbstraction(action)
             }
+            // Phase 3 new actions - Spot Deployment
+            "spotDeployRegisterToken" => ActionWrapper::SpotDeployRegisterToken(action),
+            "spotDeployUserGenesis" => ActionWrapper::SpotDeployUserGenesis(action),
+            "spotDeployFreezeUser" => ActionWrapper::SpotDeployFreezeUser(action),
+            "spotDeployEnableFreezePrivilege" => {
+                ActionWrapper::SpotDeployEnableFreezePrivilege(action)
+            }
+            "spotDeployRevokeFreezePrivilege" => {
+                ActionWrapper::SpotDeployRevokeFreezePrivilege(action)
+            }
+            "spotDeployEnableQuoteToken" => {
+                ActionWrapper::SpotDeployEnableQuoteToken(action)
+            }
+            "spotDeployGenesis" => ActionWrapper::SpotDeployGenesis(action),
+            "spotDeployRegisterSpot" => ActionWrapper::SpotDeployRegisterSpot(action),
+            "spotDeployRegisterHyperliquidity" => {
+                ActionWrapper::SpotDeployRegisterHyperliquidity(action)
+            }
+            "spotDeploySetDeployerTradingFeeShare" => {
+                ActionWrapper::SpotDeploySetDeployerTradingFeeShare(action)
+            }
+            // Phase 3 new actions - Perp Deployment
+            "perpDeployRegisterAsset" => ActionWrapper::PerpDeployRegisterAsset(action),
+            "perpDeploySetOracle" => ActionWrapper::PerpDeploySetOracle(action),
+            // Phase 3 new actions - Validator/Staking
+            "cSignerUnjailSelf" => ActionWrapper::CSignerUnjailSelf(action),
+            "cSignerJailSelf" => ActionWrapper::CSignerJailSelf(action),
+            "cValidatorRegister" => ActionWrapper::CValidatorRegister(action),
+            "cValidatorChangeProfile" => ActionWrapper::CValidatorChangeProfile(action),
+            "cValidatorUnregister" => ActionWrapper::CValidatorUnregister(action),
+            "tokenDelegate" => ActionWrapper::TokenDelegate(action),
+            // Phase 3 new actions - Other
+            "useBigBlocks" => ActionWrapper::UseBigBlocks(action),
+            "noop" => ActionWrapper::Noop(action),
             _ => {
                 return Err(HyperliquidError::InvalidRequest(format!(
                     "Unknown action type: {}",

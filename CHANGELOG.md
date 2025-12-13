@@ -52,6 +52,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `subscribe_user_twap_slice_fills(user)` - Subscribe to TWAP slice fills
 - `subscribe_user_twap_history(user)` - Subscribe to TWAP order history
 
+#### Exchange API (Phase 3) - Spot Deployment
+- `spot_deploy_register_token(name, sz_decimals, wei_decimals, max_gas, full_name)` - Register a new spot token
+- `spot_deploy_user_genesis(token, user_and_wei, existing_token_and_wei)` - User genesis for spot deployment
+- `spot_deploy_freeze_user(token, user, freeze)` - Freeze/unfreeze user in spot deployment
+- `spot_deploy_enable_freeze_privilege(token)` - Enable freeze privilege for token
+- `spot_deploy_revoke_freeze_privilege(token)` - Revoke freeze privilege for token
+- `spot_deploy_enable_quote_token(token)` - Enable quote token for spot deployment
+- `spot_deploy_genesis(token, max_supply, no_hyperliquidity)` - Genesis for spot deployment
+- `spot_deploy_register_spot(base_token, quote_token)` - Register a spot trading pair
+- `spot_deploy_register_hyperliquidity(spot, start_px, order_sz, n_orders, n_seeded_levels)` - Register hyperliquidity
+- `spot_deploy_set_deployer_trading_fee_share(token, share)` - Set deployer trading fee share
+
+#### Exchange API (Phase 3) - Perp Deployment
+- `perp_deploy_register_asset(dex, max_gas, coin, sz_decimals, oracle_px, ...)` - Register a perpetual asset
+- `perp_deploy_set_oracle(dex, oracle_pxs, all_mark_pxs, external_perp_pxs)` - Set oracle for perp asset
+
+#### Exchange API (Phase 3) - Validator/Staking
+- `c_signer_unjail_self()` - Unjail self (signer)
+- `c_signer_jail_self()` - Jail self (signer)
+- `c_validator_register(node_ip, name, description, ...)` - Register as a validator
+- `c_validator_change_profile(...)` - Change validator profile
+- `c_validator_unregister()` - Unregister as a validator
+- `token_delegate(validator, wei, is_undelegate)` - Delegate/undelegate tokens to validator
+
+#### Exchange API (Phase 3) - Other
+- `use_big_blocks(enable)` - Enable/disable large block mode
+- `noop(nonce)` - No-operation action
+
+#### Info API (Phase 3) - Staking/Delegation
+- `delegator_summary(user)` - Get staking summary
+- `delegations(user)` - Get staking delegations
+- `delegator_rewards(user)` - Get historic staking rewards
+- `delegator_history(user)` - Get comprehensive staking history
+
+#### Info API (Phase 3) - Deployment
+- `perp_deploy_auction_status()` - Get perp deployment auction status
+- `spot_deploy_state(user)` - Get spot deployment state
+- `spot_pair_deploy_auction_status(base, quote)` - Get spot pair deployment auction status
+
+#### Info API (Phase 3) - Other
+- `perp_dexs()` - Get available perpetual DEXs
+- `user_dex_abstraction(user)` - Get DEX abstraction state
+- `user_to_multi_sig_signers(multi_sig_user)` - Get multi-sig signers
+- `user_twap_slice_fills(user)` - Get TWAP slice fills
+
 #### Documentation
 - Created `docs/API_AUDIT.md` with comprehensive API coverage analysis
 - Documented Phase 2 and Phase 3 implementation plans for future work

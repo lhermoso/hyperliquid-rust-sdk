@@ -459,6 +459,269 @@ pub struct AgentEnableDexAbstraction {
     // This action has no additional fields - just the type
 }
 
+// ==================== Phase 3 New Actions ====================
+
+// --- Spot Deployment Actions ---
+
+/// Register a new spot token
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeployRegisterToken {
+    /// Token name/symbol
+    pub token_name: String,
+    /// Size decimals for trading
+    pub sz_decimals: u32,
+    /// Wei decimals for on-chain representation
+    pub wei_decimals: u32,
+    /// Maximum gas for deployment
+    pub max_gas: String,
+    /// Full name of the token
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full_name: Option<String>,
+}
+
+/// User genesis for spot deployment
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeployUserGenesis {
+    /// Token identifier
+    pub token: String,
+    /// List of (user address, wei amount) tuples for initial distribution
+    pub user_and_wei: Vec<(String, String)>,
+    /// Existing token and wei to use
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub existing_token_and_wei: Option<(String, String)>,
+}
+
+/// Freeze or unfreeze a user in spot deployment
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeployFreezeUser {
+    /// Token identifier
+    pub token: String,
+    /// User address to freeze/unfreeze
+    pub user: String,
+    /// Whether to freeze (true) or unfreeze (false)
+    pub freeze: bool,
+}
+
+/// Enable freeze privilege for a token
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeployEnableFreezePrivilege {
+    /// Token identifier
+    pub token: String,
+}
+
+/// Revoke freeze privilege for a token
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeployRevokeFreezePrivilege {
+    /// Token identifier
+    pub token: String,
+}
+
+/// Enable quote token for spot deployment
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeployEnableQuoteToken {
+    /// Token identifier to enable as quote
+    pub token: String,
+}
+
+/// Genesis for spot deployment
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeployGenesis {
+    /// Token identifier
+    pub token: String,
+    /// Maximum supply
+    pub max_supply: String,
+    /// Whether to disable hyperliquidity
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub no_hyperliquidity: Option<bool>,
+}
+
+/// Register a spot trading pair
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeployRegisterSpot {
+    /// Base token identifier
+    pub base_token: String,
+    /// Quote token identifier
+    pub quote_token: String,
+}
+
+/// Register hyperliquidity for a spot pair
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeployRegisterHyperliquidity {
+    /// Spot pair identifier
+    pub spot: String,
+    /// Starting price
+    pub start_px: String,
+    /// Order size
+    pub order_sz: String,
+    /// Number of orders
+    pub n_orders: u32,
+    /// Number of seeded levels
+    pub n_seeded_levels: u32,
+}
+
+/// Set deployer trading fee share for a token
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotDeploySetDeployerTradingFeeShare {
+    /// Token identifier
+    pub token: String,
+    /// Fee share (as decimal string, e.g., "0.001" for 0.1%)
+    pub share: String,
+}
+
+// --- Perp Deployment Actions ---
+
+/// Register a perpetual asset
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PerpDeployRegisterAsset {
+    /// DEX identifier
+    pub dex: u32,
+    /// Maximum gas for deployment
+    pub max_gas: String,
+    /// Coin name/symbol
+    pub coin: String,
+    /// Size decimals for trading
+    pub sz_decimals: u32,
+    /// Oracle price
+    pub oracle_px: String,
+    /// Margin table ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub margin_table_id: Option<u32>,
+    /// Whether to use isolated margin only
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub only_isolated: Option<bool>,
+    /// Schema type
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schema: Option<String>,
+}
+
+/// Set oracle for perpetual asset
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PerpDeploySetOracle {
+    /// DEX identifier
+    pub dex: u32,
+    /// Oracle prices
+    pub oracle_pxs: Vec<String>,
+    /// All mark prices
+    pub all_mark_pxs: Vec<String>,
+    /// External perp prices
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub external_perp_pxs: Option<Vec<String>>,
+}
+
+// --- Validator/Staking Actions ---
+
+/// Unjail self (signer)
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CSignerUnjailSelf {
+    // No additional fields - just the action type
+}
+
+/// Jail self (signer)
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CSignerJailSelf {
+    // No additional fields - just the action type
+}
+
+/// Register as a validator
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CValidatorRegister {
+    /// Node IP address
+    pub node_ip: String,
+    /// Validator name
+    pub name: String,
+    /// Validator description
+    pub description: String,
+    /// Whether delegations are disabled
+    pub delegations_disabled: bool,
+    /// Commission in basis points
+    pub commission_bps: u32,
+    /// Signer address
+    pub signer: String,
+    /// Whether initially unjailed
+    pub unjailed: bool,
+    /// Initial wei stake
+    pub initial_wei: String,
+}
+
+/// Change validator profile
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CValidatorChangeProfile {
+    /// Node IP address
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_ip: Option<String>,
+    /// Validator name
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// Validator description
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// Whether unjailed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unjailed: Option<bool>,
+    /// Whether to disable delegations
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disable_delegations: Option<bool>,
+    /// Commission in basis points
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub commission_bps: Option<u32>,
+    /// Signer address
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signer: Option<String>,
+}
+
+/// Unregister as a validator
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CValidatorUnregister {
+    // No additional fields - just the action type
+}
+
+/// Delegate tokens to a validator
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TokenDelegate {
+    /// Validator address to delegate to
+    pub validator: String,
+    /// Amount in wei
+    pub wei: String,
+    /// Whether this is an undelegation
+    pub is_undelegate: bool,
+}
+
+// --- Other Actions ---
+
+/// Enable or disable large block mode
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UseBigBlocks {
+    /// Whether to enable (true) or disable (false) big blocks
+    pub enable: bool,
+}
+
+/// No-operation action (useful for testing or keeping connection alive)
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Noop {
+    /// Nonce for the action
+    pub nonce: u64,
+}
+
 // Types are now imported from requests.rs
 
 // The macros don't handle signature_chain_id, so we need to remove the duplicate trait impls
