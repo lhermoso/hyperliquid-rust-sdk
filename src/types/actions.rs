@@ -325,6 +325,140 @@ pub struct UsdClassTransfer {
     pub to_perp: bool,
 }
 
+// ==================== Phase 2 New Actions ====================
+
+/// TWAP order request
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TwapOrder {
+    /// Asset index
+    #[serde(rename = "a")]
+    pub asset: u32,
+    /// Is buy order
+    #[serde(rename = "b")]
+    pub is_buy: bool,
+    /// Size to execute
+    #[serde(rename = "s")]
+    pub sz: String,
+    /// Reduce only flag
+    #[serde(rename = "r")]
+    pub reduce_only: bool,
+    /// Duration in minutes
+    #[serde(rename = "m")]
+    pub duration_minutes: u32,
+    /// Randomize execution
+    #[serde(rename = "t")]
+    pub randomize: bool,
+}
+
+/// Bulk TWAP order wrapper
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkTwapOrder {
+    pub twap: TwapOrder,
+}
+
+/// Cancel TWAP order
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TwapCancel {
+    /// Asset index
+    #[serde(rename = "a")]
+    pub asset: u32,
+    /// TWAP order ID
+    #[serde(rename = "t")]
+    pub twap_id: u64,
+}
+
+/// Convert account to multi-sig user
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConvertToMultiSigUser {
+    #[serde(serialize_with = "serialize_chain_id")]
+    pub signature_chain_id: u64,
+    pub hyperliquid_chain: String,
+    /// Sorted list of authorized user addresses
+    pub signers: Vec<MultiSigSigner>,
+    /// Required number of signatures
+    pub threshold: u32,
+    pub nonce: u64,
+}
+
+/// Multi-sig signer information
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MultiSigSigner {
+    pub address: String,
+    pub weight: u32,
+}
+
+impl crate::types::eip712::HyperliquidAction for ConvertToMultiSigUser {
+    const TYPE_STRING: &'static str =
+        "ConvertToMultiSigUser(string hyperliquidChain,address[] authorizedUsers,uint32 threshold,uint64 nonce)";
+    const USE_PREFIX: bool = true;
+
+    fn chain_id(&self) -> Option<u64> {
+        Some(self.signature_chain_id)
+    }
+
+    fn encode_data(&self) -> Vec<u8> {
+        use crate::types::eip712::encode_value;
+        use alloy::primitives::keccak256;
+
+        let mut encoded = Vec::new();
+        encoded.extend_from_slice(&Self::type_hash()[..]);
+        encoded.extend_from_slice(&encode_value(&self.hyperliquid_chain)[..]);
+
+        // Encode array of addresses
+        let mut addresses_encoded = Vec::new();
+        for signer in &self.signers {
+            // Parse address and encode
+            if let Ok(addr) = signer.address.parse::<alloy::primitives::Address>() {
+                addresses_encoded.extend_from_slice(&encode_value(&addr)[..]);
+            }
+        }
+        let addresses_hash = keccak256(&addresses_encoded);
+        encoded.extend_from_slice(&addresses_hash[..]);
+
+        encoded.extend_from_slice(&encode_value(&(self.threshold as u64))[..]);
+        encoded.extend_from_slice(&encode_value(&self.nonce)[..]);
+        encoded
+    }
+}
+
+/// Execute a multi-sig transaction
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MultiSig {
+    #[serde(serialize_with = "serialize_chain_id")]
+    pub signature_chain_id: u64,
+    /// The multi-sig user address
+    pub multi_sig_user: String,
+    /// The outer signer (one of the authorized users)
+    pub outer_signer: String,
+    /// The inner action to execute
+    pub inner_action: serde_json::Value,
+    /// Signatures from other authorized users
+    pub signatures: Vec<MultiSigSignature>,
+    pub nonce: u64,
+}
+
+/// Signature for multi-sig transaction
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MultiSigSignature {
+    pub r: String,
+    pub s: String,
+    pub v: u8,
+}
+
+/// Enable DEX abstraction for an agent
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentEnableDexAbstraction {
+    // This action has no additional fields - just the type
+}
+
 // Types are now imported from requests.rs
 
 // The macros don't handle signature_chain_id, so we need to remove the duplicate trait impls

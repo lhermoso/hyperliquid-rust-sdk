@@ -14,11 +14,12 @@ use serde_json::json;
 use crate::constants::Network;
 use crate::errors::HyperliquidError;
 use crate::types::info_types::{
-    CandlesSnapshotResponse, FrontendOpenOrder, FundingHistoryResponse, HistoricalOrder,
-    L2SnapshotResponse, Meta, MetaAndAssetCtxs, OpenOrdersResponse, OrderStatusResponse,
-    RecentTradesResponse, ReferralResponse, SpotMeta, SpotMetaAndAssetCtxs, SubAccount,
+    CandlesSnapshotResponse, ExtraAgent, FrontendOpenOrder, FundingHistoryResponse,
+    HistoricalOrder, L2SnapshotResponse, Meta, MetaAndAssetCtxs, NonFundingLedgerUpdate,
+    OpenOrdersResponse, OrderStatusResponse, Portfolio, RecentTradesResponse,
+    ReferralResponse, SpotMeta, SpotMetaAndAssetCtxs, SubAccount, TokenDetails,
     UserFeesResponse, UserFillByTime, UserFillsResponse, UserFundingResponse,
-    UserRateLimit, UserStateResponse, UserTokenBalanceResponse, VaultEquity,
+    UserRateLimit, UserRole, UserStateResponse, UserTokenBalanceResponse, VaultEquity,
 };
 use crate::types::Symbol;
 
@@ -389,6 +390,80 @@ impl InfoProvider {
         let request = json!({
             "type": "userVaultEquities",
             "user": user
+        });
+        self.request(request).await
+    }
+
+    // ==================== Phase 2 New Methods ====================
+
+    /// Get comprehensive portfolio performance data for a user
+    ///
+    /// Returns account value, PnL, funding, and volume statistics.
+    pub async fn portfolio(&self, user: Address) -> Result<Portfolio, HyperliquidError> {
+        let request = json!({
+            "type": "portfolio",
+            "user": user
+        });
+        self.request(request).await
+    }
+
+    /// Get non-funding ledger updates for a user (deposits, withdrawals, transfers)
+    ///
+    /// * `user` - The user address
+    /// * `start_time` - Start time in milliseconds
+    /// * `end_time` - Optional end time in milliseconds
+    pub async fn user_non_funding_ledger_updates(
+        &self,
+        user: Address,
+        start_time: u64,
+        end_time: Option<u64>,
+    ) -> Result<Vec<NonFundingLedgerUpdate>, HyperliquidError> {
+        let mut request = json!({
+            "type": "userNonFundingLedgerUpdates",
+            "user": user,
+            "startTime": start_time
+        });
+
+        if let Some(end) = end_time {
+            request["endTime"] = json!(end);
+        }
+
+        self.request(request).await
+    }
+
+    /// Get list of additional authorized agents for a user
+    pub async fn extra_agents(
+        &self,
+        user: Address,
+    ) -> Result<Vec<ExtraAgent>, HyperliquidError> {
+        let request = json!({
+            "type": "extraAgents",
+            "user": user
+        });
+        self.request(request).await
+    }
+
+    /// Get user's role and account type information
+    ///
+    /// Returns whether the user is a regular user, vault, sub-account, etc.
+    pub async fn user_role(&self, user: Address) -> Result<UserRole, HyperliquidError> {
+        let request = json!({
+            "type": "userRole",
+            "user": user
+        });
+        self.request(request).await
+    }
+
+    /// Get detailed information about a token
+    ///
+    /// * `token_id` - The token ID (hex string or token index)
+    pub async fn token_details(
+        &self,
+        token_id: impl Into<String>,
+    ) -> Result<TokenDetails, HyperliquidError> {
+        let request = json!({
+            "type": "tokenDetails",
+            "tokenId": token_id.into()
         });
         self.request(request).await
     }

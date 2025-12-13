@@ -18,8 +18,19 @@ use crate::{
     providers::order_tracker::{OrderStatus, OrderTracker, TrackedOrder},
     signers::{HyperliquidSignature, HyperliquidSigner},
     types::{
-        actions::*, eip712::HyperliquidAction, requests::*,
-        responses::ExchangeResponseStatus, Symbol,
+        actions::{
+            Agent, AgentEnableDexAbstraction, ApproveAgent, ApproveBuilderFee,
+            BulkCancel, BulkCancelCloid, BulkModify, BulkOrder, BulkTwapOrder,
+            ClassTransfer, ConvertToMultiSigUser, CreateSubAccount, MultiSig,
+            MultiSigSignature, MultiSigSigner, ScheduleCancel, SetReferrer, SpotSend,
+            SpotUser, SubAccountSpotTransfer, SubAccountTransfer, TwapCancel, TwapOrder,
+            UpdateIsolatedMargin, UpdateLeverage, UsdClassTransfer, UsdSend,
+            VaultTransfer, Withdraw,
+        },
+        eip712::HyperliquidAction,
+        requests::*,
+        responses::ExchangeResponseStatus,
+        Symbol,
     },
 };
 
@@ -853,6 +864,148 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("usdClassTransfer", &action).await
     }
 
+    // ==================== Phase 2 New Actions ====================
+
+    /// Place a TWAP (Time-Weighted Average Price) order
+    ///
+    /// TWAP orders split a large order into smaller pieces executed over time
+    /// to minimize market impact.
+    ///
+    /// * `asset` - Asset index
+    /// * `is_buy` - true for buy, false for sell
+    /// * `sz` - Total size to execute
+    /// * `reduce_only` - Whether this should only reduce position
+    /// * `duration_minutes` - Duration over which to execute (in minutes)
+    /// * `randomize` - Whether to randomize execution timing
+    pub async fn twap_order(
+        &self,
+        asset: u32,
+        is_buy: bool,
+        sz: &str,
+        reduce_only: bool,
+        duration_minutes: u32,
+        randomize: bool,
+    ) -> Result<ExchangeResponseStatus> {
+        let twap = TwapOrder {
+            asset,
+            is_buy,
+            sz: sz.to_string(),
+            reduce_only,
+            duration_minutes,
+            randomize,
+        };
+        let action = BulkTwapOrder { twap };
+        self.send_l1_action("twapOrder", &action).await
+    }
+
+    /// Cancel a TWAP order
+    ///
+    /// * `asset` - Asset index
+    /// * `twap_id` - The TWAP order ID to cancel
+    pub async fn twap_cancel(
+        &self,
+        asset: u32,
+        twap_id: u64,
+    ) -> Result<ExchangeResponseStatus> {
+        let action = TwapCancel { asset, twap_id };
+        self.send_l1_action("twapCancel", &action).await
+    }
+
+    /// Convert account to multi-sig user
+    ///
+    /// Once converted, actions require multiple signatures based on the threshold.
+    ///
+    /// * `authorized_users` - List of addresses and their weights (must be sorted)
+    /// * `threshold` - Required total weight for approval
+    pub async fn convert_to_multi_sig_user(
+        &self,
+        authorized_users: Vec<(Address, u32)>,
+        threshold: u32,
+    ) -> Result<ExchangeResponseStatus> {
+        let (chain_id, _) = self.infer_network();
+        let chain = if chain_id == CHAIN_ID_MAINNET {
+            "Mainnet"
+        } else {
+            "Testnet"
+        };
+
+        // Sort users by address and create signer structs
+        let mut signers: Vec<MultiSigSigner> = authorized_users
+            .into_iter()
+            .map(|(addr, weight)| MultiSigSigner {
+                address: format!("{:#x}", addr),
+                weight,
+            })
+            .collect();
+        signers.sort_by(|a, b| a.address.cmp(&b.address));
+
+        let action = ConvertToMultiSigUser {
+            signature_chain_id: chain_id,
+            hyperliquid_chain: chain.to_string(),
+            signers,
+            threshold,
+            nonce: Self::current_nonce(),
+        };
+
+        self.send_user_action(&action).await
+    }
+
+    /// Execute a multi-sig transaction
+    ///
+    /// Used to execute actions on a multi-sig account with collected signatures.
+    ///
+    /// * `multi_sig_user` - The multi-sig account address
+    /// * `inner_action` - The action to execute (as JSON value)
+    /// * `signatures` - Signatures from other authorized users
+    pub async fn multi_sig(
+        &self,
+        multi_sig_user: Address,
+        inner_action: serde_json::Value,
+        signatures: Vec<(String, String, u8)>, // (r, s, v)
+    ) -> Result<ExchangeResponseStatus> {
+        let (chain_id, _) = self.infer_network();
+
+        let sigs: Vec<MultiSigSignature> = signatures
+            .into_iter()
+            .map(|(r, s, v)| MultiSigSignature { r, s, v })
+            .collect();
+
+        let action = MultiSig {
+            signature_chain_id: chain_id,
+            multi_sig_user: format!("{:#x}", multi_sig_user),
+            outer_signer: format!("{:#x}", self.signer.address()),
+            inner_action,
+            signatures: sigs,
+            nonce: Self::current_nonce(),
+        };
+
+        // Multi-sig actions are posted directly without additional signing
+        let nonce = action.nonce;
+        let action_value = serde_json::to_value(&action)?;
+        let mut action_with_type = action_value;
+        if let serde_json::Value::Object(ref mut map) = action_with_type {
+            map.insert("type".to_string(), json!("multiSig"));
+        }
+
+        // For multi-sig, we need a dummy signature since the actual signatures are in the payload
+        let signature = crate::signers::HyperliquidSignature {
+            r: alloy::primitives::U256::ZERO,
+            s: alloy::primitives::U256::ZERO,
+            v: 27,
+        };
+
+        self.post(action_with_type, signature, nonce).await
+    }
+
+    /// Enable DEX abstraction for the current agent
+    ///
+    /// This allows the agent to interact with DEX features.
+    pub async fn agent_enable_dex_abstraction(&self) -> Result<ExchangeResponseStatus> {
+        let action = AgentEnableDexAbstraction {};
+        self.send_l1_action("agentEnableDexAbstraction", &action)
+            .await
+    }
+
     // ==================== Helper Methods ====================
 
     fn current_nonce() -> u64 {
@@ -895,6 +1048,10 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             SubAccountTransfer(&'a T),
             SubAccountSpotTransfer(&'a T),
             UsdClassTransfer(&'a T),
+            // Phase 2 new actions
+            TwapOrder(&'a T),
+            TwapCancel(&'a T),
+            AgentEnableDexAbstraction(&'a T),
         }
 
         // Wrap the action based on type
@@ -919,6 +1076,12 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             "subAccountTransfer" => ActionWrapper::SubAccountTransfer(action),
             "subAccountSpotTransfer" => ActionWrapper::SubAccountSpotTransfer(action),
             "usdClassTransfer" => ActionWrapper::UsdClassTransfer(action),
+            // Phase 2 new actions
+            "twapOrder" => ActionWrapper::TwapOrder(action),
+            "twapCancel" => ActionWrapper::TwapCancel(action),
+            "agentEnableDexAbstraction" => {
+                ActionWrapper::AgentEnableDexAbstraction(action)
+            }
             _ => {
                 return Err(HyperliquidError::InvalidRequest(format!(
                     "Unknown action type: {}",

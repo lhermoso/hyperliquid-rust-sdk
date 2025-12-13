@@ -199,6 +199,70 @@ impl RawWsProvider {
         self.subscribe(subscription).await
     }
 
+    // ==================== Phase 2 New Subscriptions ====================
+
+    /// Subscribe to aggregate user information (newer version of webData2)
+    pub async fn subscribe_web_data3(
+        &mut self,
+        user: Address,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let subscription = Subscription::WebData3 { user };
+        self.subscribe(subscription).await
+    }
+
+    /// Subscribe to TWAP order states for a user
+    pub async fn subscribe_twap_states(
+        &mut self,
+        user: Address,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let subscription = Subscription::TwapStates { user };
+        self.subscribe(subscription).await
+    }
+
+    /// Subscribe to active asset context updates
+    pub async fn subscribe_active_asset_ctx(
+        &mut self,
+        coin: impl Into<Symbol>,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let symbol = coin.into();
+        let subscription = Subscription::ActiveAssetCtx {
+            coin: symbol.as_str().to_string(),
+        };
+        self.subscribe(subscription).await
+    }
+
+    /// Subscribe to active asset data for a user and coin (perps only)
+    pub async fn subscribe_active_asset_data(
+        &mut self,
+        user: Address,
+        coin: impl Into<Symbol>,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let symbol = coin.into();
+        let subscription = Subscription::ActiveAssetData {
+            user,
+            coin: symbol.as_str().to_string(),
+        };
+        self.subscribe(subscription).await
+    }
+
+    /// Subscribe to TWAP slice fills for a user
+    pub async fn subscribe_user_twap_slice_fills(
+        &mut self,
+        user: Address,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let subscription = Subscription::UserTwapSliceFills { user };
+        self.subscribe(subscription).await
+    }
+
+    /// Subscribe to TWAP order history for a user
+    pub async fn subscribe_user_twap_history(
+        &mut self,
+        user: Address,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let subscription = Subscription::UserTwapHistory { user };
+        self.subscribe(subscription).await
+    }
+
     /// Generic subscription method
     pub async fn subscribe(
         &mut self,
@@ -523,6 +587,70 @@ impl ManagedWsProvider {
         user: Address,
     ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
         let subscription = Subscription::ClearinghouseState { user };
+        self.subscribe(subscription).await
+    }
+
+    // ==================== Phase 2 New Subscriptions ====================
+
+    /// Subscribe to aggregate user information (newer version) with automatic replay on reconnect
+    pub async fn subscribe_web_data3(
+        &self,
+        user: Address,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let subscription = Subscription::WebData3 { user };
+        self.subscribe(subscription).await
+    }
+
+    /// Subscribe to TWAP order states with automatic replay on reconnect
+    pub async fn subscribe_twap_states(
+        &self,
+        user: Address,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let subscription = Subscription::TwapStates { user };
+        self.subscribe(subscription).await
+    }
+
+    /// Subscribe to active asset context updates with automatic replay on reconnect
+    pub async fn subscribe_active_asset_ctx(
+        &self,
+        coin: impl Into<Symbol>,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let symbol = coin.into();
+        let subscription = Subscription::ActiveAssetCtx {
+            coin: symbol.as_str().to_string(),
+        };
+        self.subscribe(subscription).await
+    }
+
+    /// Subscribe to active asset data with automatic replay on reconnect
+    pub async fn subscribe_active_asset_data(
+        &self,
+        user: Address,
+        coin: impl Into<Symbol>,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let symbol = coin.into();
+        let subscription = Subscription::ActiveAssetData {
+            user,
+            coin: symbol.as_str().to_string(),
+        };
+        self.subscribe(subscription).await
+    }
+
+    /// Subscribe to TWAP slice fills with automatic replay on reconnect
+    pub async fn subscribe_user_twap_slice_fills(
+        &self,
+        user: Address,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let subscription = Subscription::UserTwapSliceFills { user };
+        self.subscribe(subscription).await
+    }
+
+    /// Subscribe to TWAP order history with automatic replay on reconnect
+    pub async fn subscribe_user_twap_history(
+        &self,
+        user: Address,
+    ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
+        let subscription = Subscription::UserTwapHistory { user };
         self.subscribe(subscription).await
     }
 
