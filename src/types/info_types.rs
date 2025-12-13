@@ -353,7 +353,7 @@ pub struct SpotPairMeta {
     pub is_canonical: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum EvmContract {
     String(String),
@@ -516,4 +516,167 @@ pub struct UserRateLimit {
 pub struct VaultEquity {
     pub vault_address: Address,
     pub equity: String,
+}
+
+// ==================== Phase 2 New Types ====================
+
+/// Response for portfolio - comprehensive portfolio performance data
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Portfolio {
+    /// Account value in USD
+    pub account_value: String,
+    /// Total notional position value
+    pub total_ntl_pos: String,
+    /// Total margin used
+    pub total_margin_used: String,
+    /// Total raw USD
+    pub total_raw_usd: String,
+    /// Withdrawable amount
+    pub withdrawable: String,
+    /// Cumulative PnL
+    #[serde(default)]
+    pub cum_pnl: Option<String>,
+    /// Cumulative funding
+    #[serde(default)]
+    pub cum_funding: Option<String>,
+    /// Cumulative volume
+    #[serde(default)]
+    pub cum_vlm: Option<String>,
+}
+
+/// Response for userNonFundingLedgerUpdates - ledger activity
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct NonFundingLedgerUpdate {
+    pub time: u64,
+    pub hash: String,
+    pub delta: NonFundingDelta,
+}
+
+/// Delta type for non-funding ledger updates
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum NonFundingDelta {
+    /// Deposit to account
+    Deposit { usdc: String },
+    /// Withdrawal from account
+    Withdraw {
+        usdc: String,
+        nonce: u64,
+        fee: String,
+    },
+    /// Internal transfer between accounts
+    InternalTransfer {
+        usdc: String,
+        user: Address,
+        destination: Address,
+        fee: String,
+    },
+    /// Sub-account transfer
+    SubAccountTransfer {
+        usdc: String,
+        user: Address,
+        destination: Address,
+    },
+    /// Spot token transfer
+    SpotTransfer {
+        token: String,
+        amount: String,
+        user: Address,
+        destination: Address,
+        fee: String,
+    },
+    /// Liquidation
+    Liquidation {
+        liquidated_user: Address,
+        #[serde(default)]
+        leveraged_ntl: Option<String>,
+    },
+    /// Account class transfer (perp <-> spot)
+    AccountClassTransfer { usdc: String, to_perp: bool },
+    /// Spot genesis
+    SpotGenesis { token: String, amount: String },
+    /// Rewards claim
+    RewardsClaim { amount: String },
+    /// Vault deposit
+    VaultDeposit { vault: Address, usdc: String },
+    /// Vault withdrawal
+    VaultWithdraw {
+        vault: Address,
+        usdc: String,
+        #[serde(default)]
+        fee: Option<String>,
+    },
+    /// Vault leader commission
+    VaultLeaderCommission { usdc: String },
+}
+
+/// Response for extraAgents - list of additional authorized agents
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ExtraAgent {
+    pub address: Address,
+    pub name: Option<String>,
+    #[serde(default)]
+    pub valid_until: Option<u64>,
+}
+
+/// Response for userRole - user role and account type
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UserRole {
+    /// Role type (e.g., "user", "vault", "subAccount")
+    pub role: String,
+    /// Additional role data
+    #[serde(default)]
+    pub data: Option<UserRoleData>,
+}
+
+/// Additional data for user role
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UserRoleData {
+    /// Master account for sub-accounts
+    #[serde(default)]
+    pub master: Option<Address>,
+    /// Vault address for vault accounts
+    #[serde(default)]
+    pub vault: Option<Address>,
+}
+
+/// Response for tokenDetails - detailed token information
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TokenDetails {
+    /// Token name/symbol
+    pub name: String,
+    /// Size decimals for trading
+    pub sz_decimals: u32,
+    /// Wei decimals for on-chain representation
+    pub wei_decimals: u32,
+    /// Token index
+    pub index: u32,
+    /// Token ID (hex string)
+    pub token_id: String,
+    /// Whether this is a canonical token
+    pub is_canonical: bool,
+    /// Full name of the token
+    #[serde(default)]
+    pub full_name: Option<String>,
+    /// EVM contract information
+    #[serde(default)]
+    pub evm_contract: Option<EvmContract>,
+    /// Deployer trading fee share
+    #[serde(default)]
+    pub deployer_trading_fee_share: Option<String>,
+    /// Total supply
+    #[serde(default)]
+    pub total_supply: Option<String>,
+    /// Circulating supply
+    #[serde(default)]
+    pub circulating_supply: Option<String>,
+    /// Market cap
+    #[serde(default)]
+    pub market_cap: Option<String>,
 }

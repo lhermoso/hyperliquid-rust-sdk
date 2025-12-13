@@ -14,9 +14,9 @@ This document provides a comprehensive audit of the ferrofluid Rust SDK implemen
 
 | Category | Implemented | Missing | Coverage |
 |----------|-------------|---------|----------|
-| Exchange API | 15 | 25+ | ~40% |
-| Info API | 16 | 21 | ~43% |
-| WebSocket | 11 | 9 | ~55% |
+| Exchange API | 20 | 20+ | ~50% |
+| Info API | 21 | 16 | ~57% |
+| WebSocket | 17 | 3 | ~85% |
 
 ---
 
@@ -51,15 +51,15 @@ This document provides a comprehensive audit of the ferrofluid Rust SDK implemen
 | `subAccountSpotTransfer` | Transfer spot tokens between sub-accounts | `subAccountUser: Address, isDeposit: bool, token: String, amount: String` | TODO |
 | `usdClassTransfer` | Transfer USD between perp/spot classes | `amount: String, toPerp: bool` | TODO |
 
-### Phase 2 - Missing (MEDIUM PRIORITY)
+### Phase 2 - Implemented
 
-| Action | Description | Parameters |
-|--------|-------------|------------|
-| `twapOrder` | Place TWAP order | `orders: Vec<TwapOrderRequest>` |
-| `twapCancel` | Cancel TWAP order | `a: u32, t: u64` (asset, twapId) |
-| `convertToMultiSigUser` | Enable multi-sig for account | `authorizedUsers: Vec<Address>, threshold: u32` |
-| `multiSig` | Execute multi-sig transaction | `signatureChainId, payload, signatures` |
-| `agentEnableDexAbstraction` | Enable DEX abstraction for agent | `agentAddress: Address` |
+| Action | Method | File Location |
+|--------|--------|---------------|
+| `twapOrder` | `twap_order()` | `exchange.rs:869` |
+| `twapCancel` | `twap_cancel()` | `exchange.rs:894` |
+| `convertToMultiSigUser` | `convert_to_multi_sig_user()` | `exchange.rs:909` |
+| `multiSig` | `multi_sig()` | `exchange.rs:949` |
+| `agentEnableDexAbstraction` | `agent_enable_dex_abstraction()` | `exchange.rs:999` |
 
 ### Phase 3 - Missing (LOW PRIORITY)
 
@@ -136,15 +136,15 @@ This document provides a comprehensive audit of the ferrofluid Rust SDK implemen
 | `userRateLimit` | API rate limit configuration | `user: Address` | `UserRateLimit` |
 | `userVaultEquities` | Vault equity positions | `user: Address` | `Vec<VaultEquity>` |
 
-### Phase 2 - Missing (MEDIUM PRIORITY)
+### Phase 2 - Implemented
 
-| Query Type | Description | Parameters |
-|------------|-------------|------------|
-| `portfolio` | Comprehensive portfolio performance | `user: Address` |
-| `userNonFundingLedgerUpdates` | Ledger activity (deposits, withdrawals) | `user, startTime, endTime?` |
-| `extraAgents` | Additional authorized agents | `user: Address` |
-| `userRole` | User role and account type | `user: Address` |
-| `tokenDetails` | Token information | `tokenId: String` |
+| Query Type | Method | File Location |
+|------------|--------|---------------|
+| `portfolio` | `portfolio()` | `info.rs:402` |
+| `userNonFundingLedgerUpdates` | `user_non_funding_ledger_updates()` | `info.rs:415` |
+| `extraAgents` | `extra_agents()` | `info.rs:435` |
+| `userRole` | `user_role()` | `info.rs:449` |
+| `tokenDetails` | `token_details()` | `info.rs:460` |
 
 ### Phase 3 - Missing (LOW PRIORITY)
 
@@ -199,16 +199,16 @@ This document provides a comprehensive audit of the ferrofluid Rust SDK implemen
 | `openOrders` | Real-time open orders | `user: Address` |
 | `clearinghouseState` | Real-time clearinghouse data | `user: Address` |
 
-### Phase 2 - Missing (MEDIUM PRIORITY)
+### Phase 2 - Implemented
 
-| Channel | Description | Parameters |
-|---------|-------------|------------|
-| `webData3` | Aggregate user info (newer version) | `user: Address` |
-| `twapStates` | TWAP order states | `user: Address` |
-| `activeAssetCtx` | Active asset context | `coin: String` |
-| `activeAssetData` | Active perp asset data | `coin: String` |
-| `userTwapSliceFills` | TWAP slice fills | `user: Address` |
-| `userTwapHistory` | TWAP history | `user: Address` |
+| Channel | Method | File Location |
+|---------|--------|---------------|
+| `webData3` | `subscribe_web_data3()` | `websocket.rs:205` |
+| `twapStates` | `subscribe_twap_states()` | `websocket.rs:214` |
+| `activeAssetCtx` | `subscribe_active_asset_ctx()` | `websocket.rs:223` |
+| `activeAssetData` | `subscribe_active_asset_data()` | `websocket.rs:235` |
+| `userTwapSliceFills` | `subscribe_user_twap_slice_fills()` | `websocket.rs:249` |
+| `userTwapHistory` | `subscribe_user_twap_history()` | `websocket.rs:258` |
 
 ---
 
@@ -293,25 +293,40 @@ pub async fn subscribe_new_channel(
 
 ## Changelog
 
-### Phase 1 (Current Implementation)
-- [ ] Added `metaAndAssetCtxs` Info query
-- [ ] Added `frontendOpenOrders` Info query
-- [ ] Added `userFillsByTime` Info query
-- [ ] Added `historicalOrders` Info query
-- [ ] Added `subAccounts` Info query
-- [ ] Added `userRateLimit` Info query
-- [ ] Added `userVaultEquities` Info query
-- [ ] Added `scheduleCancel` Exchange action
-- [ ] Added `createSubAccount` Exchange action
-- [ ] Added `subAccountTransfer` Exchange action
-- [ ] Added `subAccountSpotTransfer` Exchange action
-- [ ] Added `usdClassTransfer` Exchange action
-- [ ] Added `bbo` WebSocket subscription
-- [ ] Added `openOrders` WebSocket subscription
-- [ ] Added `clearinghouseState` WebSocket subscription
+### Phase 1 (Implemented)
+- [x] Added `metaAndAssetCtxs` Info query
+- [x] Added `frontendOpenOrders` Info query
+- [x] Added `userFillsByTime` Info query
+- [x] Added `historicalOrders` Info query
+- [x] Added `subAccounts` Info query
+- [x] Added `userRateLimit` Info query
+- [x] Added `userVaultEquities` Info query
+- [x] Added `scheduleCancel` Exchange action
+- [x] Added `createSubAccount` Exchange action
+- [x] Added `subAccountTransfer` Exchange action
+- [x] Added `subAccountSpotTransfer` Exchange action
+- [x] Added `usdClassTransfer` Exchange action
+- [x] Added `bbo` WebSocket subscription
+- [x] Added `openOrders` WebSocket subscription
+- [x] Added `clearinghouseState` WebSocket subscription
 
-### Phase 2 (Future)
-- See sections marked as Phase 2 above
+### Phase 2 (Implemented)
+- [x] Added `portfolio` Info query
+- [x] Added `userNonFundingLedgerUpdates` Info query
+- [x] Added `extraAgents` Info query
+- [x] Added `userRole` Info query
+- [x] Added `tokenDetails` Info query
+- [x] Added `twapOrder` Exchange action
+- [x] Added `twapCancel` Exchange action
+- [x] Added `convertToMultiSigUser` Exchange action
+- [x] Added `multiSig` Exchange action
+- [x] Added `agentEnableDexAbstraction` Exchange action
+- [x] Added `webData3` WebSocket subscription
+- [x] Added `twapStates` WebSocket subscription
+- [x] Added `activeAssetCtx` WebSocket subscription
+- [x] Added `activeAssetData` WebSocket subscription
+- [x] Added `userTwapSliceFills` WebSocket subscription
+- [x] Added `userTwapHistory` WebSocket subscription
 
 ### Phase 3 (Future)
 - See sections marked as Phase 3 above

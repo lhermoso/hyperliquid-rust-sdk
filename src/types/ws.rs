@@ -24,6 +24,13 @@ pub enum Subscription {
     Bbo { coin: String },
     OpenOrders { user: Address },
     ClearinghouseState { user: Address },
+    // Phase 2 new subscriptions
+    WebData3 { user: Address },
+    TwapStates { user: Address },
+    ActiveAssetCtx { coin: String },
+    ActiveAssetData { user: Address, coin: String },
+    UserTwapSliceFills { user: Address },
+    UserTwapHistory { user: Address },
 }
 
 // Incoming message types
@@ -47,6 +54,13 @@ pub enum Message {
     Bbo(Bbo),
     OpenOrders(OpenOrdersWs),
     ClearinghouseState(ClearinghouseStateWs),
+    // Phase 2 new message types
+    WebData3(WebData3Ws),
+    TwapStates(TwapStatesWs),
+    ActiveAssetCtx(ActiveAssetCtxWs),
+    ActiveAssetData(ActiveAssetDataWs),
+    UserTwapSliceFills(UserTwapSliceFillsWs),
+    UserTwapHistory(UserTwapHistoryWs),
 }
 
 // Market data structures
@@ -410,4 +424,173 @@ pub struct PositionWs {
     pub return_on_equity: String,
     pub szi: String,
     pub unrealized_pnl: String,
+}
+
+// ==================== Phase 2 New Message Types ====================
+
+/// WebData3 - Aggregate user information (newer version)
+#[derive(Debug, Clone, Deserialize)]
+pub struct WebData3Ws {
+    pub data: WebData3Data,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebData3Data {
+    pub user: Address,
+    #[serde(default)]
+    pub is_snapshot: Option<bool>,
+    #[serde(default)]
+    pub clearinghouse_state: Option<ClearinghouseStateWsData>,
+    #[serde(default)]
+    pub open_orders: Option<Vec<BasicOrder>>,
+    #[serde(default)]
+    pub fills: Option<Vec<TradeInfo>>,
+    #[serde(default)]
+    pub fundings: Option<Vec<UserFunding>>,
+}
+
+/// TWAP order states
+#[derive(Debug, Clone, Deserialize)]
+pub struct TwapStatesWs {
+    pub data: TwapStatesData,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TwapStatesData {
+    pub user: Address,
+    #[serde(default)]
+    pub is_snapshot: Option<bool>,
+    pub twap_states: Vec<TwapState>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TwapState {
+    pub twap_id: u64,
+    pub coin: String,
+    pub side: String,
+    pub sz: String,
+    pub sz_filled: String,
+    pub duration_minutes: u32,
+    pub start_time: u64,
+    pub end_time: u64,
+    pub status: String,
+    #[serde(default)]
+    pub randomize: Option<bool>,
+}
+
+/// Active asset context
+#[derive(Debug, Clone, Deserialize)]
+pub struct ActiveAssetCtxWs {
+    pub data: ActiveAssetCtxData,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActiveAssetCtxData {
+    pub coin: String,
+    pub ctx: AssetCtx,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetCtx {
+    pub funding: String,
+    pub open_interest: String,
+    pub prev_day_px: String,
+    pub day_ntl_vlm: String,
+    pub premium: Option<String>,
+    pub oracle_px: String,
+    pub mark_px: String,
+    pub mid_px: Option<String>,
+    pub impact_pxs: Option<Vec<String>>,
+}
+
+/// Active asset data (perps only)
+#[derive(Debug, Clone, Deserialize)]
+pub struct ActiveAssetDataWs {
+    pub data: ActiveAssetDataData,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActiveAssetDataData {
+    pub user: Address,
+    pub coin: String,
+    pub leverage: LeverageWs,
+    #[serde(default)]
+    pub max_trade_szs: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LeverageWs {
+    #[serde(rename = "type")]
+    pub leverage_type: String,
+    pub value: u32,
+    #[serde(default)]
+    pub raw_usd: Option<String>,
+}
+
+/// User TWAP slice fills
+#[derive(Debug, Clone, Deserialize)]
+pub struct UserTwapSliceFillsWs {
+    pub data: UserTwapSliceFillsData,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserTwapSliceFillsData {
+    pub user: Address,
+    #[serde(default)]
+    pub is_snapshot: Option<bool>,
+    pub twap_slice_fills: Vec<TwapSliceFill>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TwapSliceFill {
+    pub twap_id: u64,
+    pub coin: String,
+    pub side: String,
+    pub px: String,
+    pub sz: String,
+    pub time: u64,
+    pub fee: String,
+    pub oid: u64,
+    pub hash: String,
+}
+
+/// User TWAP history
+#[derive(Debug, Clone, Deserialize)]
+pub struct UserTwapHistoryWs {
+    pub data: UserTwapHistoryData,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserTwapHistoryData {
+    pub user: Address,
+    #[serde(default)]
+    pub is_snapshot: Option<bool>,
+    pub twap_history: Vec<TwapHistoryEntry>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TwapHistoryEntry {
+    pub twap_id: u64,
+    pub coin: String,
+    pub side: String,
+    pub sz: String,
+    pub sz_filled: String,
+    pub avg_px: Option<String>,
+    pub duration_minutes: u32,
+    pub start_time: u64,
+    pub end_time: u64,
+    pub status: String,
+    #[serde(default)]
+    pub randomize: Option<bool>,
 }
