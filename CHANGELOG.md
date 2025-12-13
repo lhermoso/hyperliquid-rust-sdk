@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Documentation
 - Created `docs/API_AUDIT.md` with comprehensive API coverage analysis
 - Documented Phase 2 and Phase 3 implementation plans for future work
+- Updated README with fork attribution to ControlCplusControlV/ferrofluid and new package name ([#2](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/2))
 
 ### Changed
 - Added `Clone` derive to `MarginSummary` type
