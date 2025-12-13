@@ -1,10 +1,12 @@
-# Ferrofluid
+# Hyperliquid Rust SDK
 
-![Ferrofluid](ferrofluid-background.png)
+![Hyperliquid Rust SDK](ferrofluid-background.png)
+
+> **Fork Notice**: This is an actively maintained fork of [ferrofluid](https://github.com/ControlCplusControlV/ferrofluid) by ControlCplusControlV. This fork provides complete coverage of all Hyperliquid API endpoints and is under active development.
 
 A high-performance Rust SDK for the Hyperliquid Protocol, built with a "thin wrapper, maximum control" philosophy.
 
-[![Crates.io](https://img.shields.io/crates/v/ferrofluid.svg)](https://crates.io/crates/ferrofluid)
+[![Crates.io](https://img.shields.io/crates/v/hyperliquid-rust-sdk.svg)](https://crates.io/crates/hyperliquid-rust-sdk)
 
 ## Features
 
@@ -21,7 +23,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ferrofluid = "0.1.0"
+hyperliquid-rust-sdk = "0.1.0"
 ```
 
 ## Quick Start
@@ -244,9 +246,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
+This project is a fork of [ferrofluid](https://github.com/ControlCplusControlV/ferrofluid) by [ControlCplusControlV](https://github.com/ControlCplusControlV). We are grateful for the original work that made this SDK possible.
+
 Built with high-performance crates from the Rust ecosystem:
 - [alloy-rs](https://github.com/alloy-rs/alloy) for Ethereum primitives
-- [hyperliquid-rust-sdk](https://github.com/hyperliquid-dex/hyperliquid-rust-sdk/tree/master)
+- [hyperliquid-rust-sdk](https://github.com/hyperliquid-dex/hyperliquid-rust-sdk/tree/master) (official SDK reference)
 - [hyper](https://hyper.rs/) for HTTP
 - [fastwebsockets](https://github.com/littledivy/fastwebsockets) for WebSocket
 - [simd-json](https://github.com/simd-lite/simd-json) for JSON parsing
