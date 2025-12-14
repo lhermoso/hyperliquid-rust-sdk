@@ -337,7 +337,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             // Track the order
             let timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .expect("system time before UNIX epoch")
                 .as_secs();
             tracker.track_order(cloid, order.clone(), timestamp);
 
@@ -406,7 +406,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             // Track the order
             let timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .expect("system time before UNIX epoch")
                 .as_secs();
             tracker.track_order(cloid, order.clone(), timestamp);
 
@@ -1407,7 +1407,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
     fn current_nonce() -> u64 {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("system time before UNIX epoch")
             .as_millis() as u64
     }
 

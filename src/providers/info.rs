@@ -45,8 +45,9 @@ impl RateLimiter {
     }
 
     pub fn check_weight(&self, weight: u32) -> Result<(), HyperliquidError> {
-        let mut tokens = self.tokens.lock().unwrap();
-        let mut last_refill = self.last_refill.lock().unwrap();
+        let mut tokens = self.tokens.lock().expect("token bucket mutex poisoned");
+        let mut last_refill =
+            self.last_refill.lock().expect("last_refill mutex poisoned");
 
         // Refill tokens based on elapsed time
         let now = Instant::now();
