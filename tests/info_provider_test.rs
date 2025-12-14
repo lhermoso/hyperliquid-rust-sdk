@@ -321,24 +321,18 @@ mod live_tests {
         let provider = InfoProvider::new(get_test_network());
         let result = provider.spot_meta_and_asset_ctxs().await;
 
-        // Note: This endpoint may fail with JSON parsing errors due to SDK type
-        // definition mismatches with the actual API response format.
-        // A network error would indicate a real problem; JSON errors indicate
-        // the SDK types need updating.
-        match &result {
-            Ok(_) => {} // Success
-            Err(e) => {
-                let err_str = format!("{:?}", e);
-                if err_str.contains("Json") {
-                    eprintln!(
-                        "spot_meta_and_asset_ctxs: SDK type mismatch (known issue): {:?}",
-                        e
-                    );
-                } else {
-                    panic!("spot_meta_and_asset_ctxs network error: {:?}", e);
-                }
-            }
-        }
+        assert!(
+            result.is_ok(),
+            "spot_meta_and_asset_ctxs failed: {:?}",
+            result.err()
+        );
+
+        let data = result.unwrap();
+        // Verify we got spot metadata
+        assert!(
+            !data.meta.universe.is_empty() || !data.meta.tokens.is_empty(),
+            "spot_meta_and_asset_ctxs returned empty metadata"
+        );
     }
 
     // User-specific endpoints require authentication
@@ -364,19 +358,19 @@ mod live_tests {
 
         let result = provider.portfolio(user).await;
 
-        // Note: This endpoint may fail with JSON parsing errors due to SDK type
-        // definition mismatches with the actual API response format.
-        match &result {
-            Ok(_) => {} // Success
-            Err(e) => {
-                let err_str = format!("{:?}", e);
-                if err_str.contains("Json") {
-                    eprintln!("portfolio: SDK type mismatch (known issue): {:?}", e);
-                } else {
-                    panic!("portfolio network error: {:?}", e);
-                }
-            }
-        }
+        assert!(result.is_ok(), "portfolio failed: {:?}", result.err());
+
+        let portfolio = result.unwrap();
+        // Portfolio returns multiple time periods
+        assert!(!portfolio.is_empty(), "portfolio returned empty data");
+
+        // Verify we have expected time periods
+        let periods: Vec<&str> = portfolio.iter().map(|(p, _)| p.as_str()).collect();
+        assert!(
+            periods.contains(&"day") || periods.contains(&"allTime"),
+            "portfolio missing expected time periods: {:?}",
+            periods
+        );
     }
 
     #[tokio::test]

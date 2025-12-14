@@ -127,6 +127,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `Clone` derive to `MarginSummary` type
 - Added `Clone` derive to `EvmContract` type
 - Aligned library import name with crate name - now import as `hyperliquid_rust_sdk` instead of `ferrofluid` ([#10](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/10))
+- **BREAKING**: `Portfolio` type changed from a struct to `Vec<(String, PortfolioPeriodData)>` to match actual API response format which returns time-series data per period (day, week, month, allTime, etc.)
+- **BREAKING**: `SpotMetaAndAssetCtxs` type restructured to correctly deserialize the API's `[{universe, tokens}, [...assetCtxs]]` tuple format; now has `meta: SpotMeta` and `asset_ctxs: Vec<SpotAssetContext>` fields
+- Added `Clone` derive to `SpotMeta`, `SpotPairMeta`, and `TokenMeta` types
+
+### Fixed
+- Fixed `portfolio(user)` endpoint deserialization - API returns array of time period tuples, not a flat object
+- Fixed `spot_meta_and_asset_ctxs()` endpoint deserialization - API returns a 2-element tuple array, not a single object with all fields
 
 ## [0.1.1] - 2024-XX-XX
 

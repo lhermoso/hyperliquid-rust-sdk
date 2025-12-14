@@ -198,12 +198,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n=== Testing portfolio endpoint ===");
     match info.portfolio(user).await {
         Ok(portfolio) => {
-            println!("Portfolio data retrieved:");
-            println!("  Account Value: {}", portfolio.account_value);
-            println!("  Total Ntl Pos: {}", portfolio.total_ntl_pos);
-            println!("  Total Margin Used: {}", portfolio.total_margin_used);
-            println!("  Withdrawable: {}", portfolio.withdrawable);
-            println!("  Cum PnL: {:?}", portfolio.cum_pnl);
+            println!("Portfolio data retrieved ({} time periods):", portfolio.len());
+            for (period, data) in portfolio.iter().take(3) {
+                println!("  Period: {}", period);
+                println!("    Volume: {}", data.vlm);
+                println!(
+                    "    Account Value History: {} entries",
+                    data.account_value_history.len()
+                );
+                println!("    PnL History: {} entries", data.pnl_history.len());
+            }
         }
         Err(e) => println!(
             "Error fetching portfolio (expected if user doesn't exist): {}",

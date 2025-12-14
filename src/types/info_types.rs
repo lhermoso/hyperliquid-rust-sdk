@@ -337,14 +337,14 @@ pub struct AssetMeta {
     pub is_delisted: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SpotMeta {
     pub universe: Vec<SpotPairMeta>,
     pub tokens: Vec<TokenMeta>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SpotPairMeta {
     pub name: String,
@@ -363,7 +363,7 @@ pub enum EvmContract {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TokenMeta {
     pub name: String,
@@ -380,12 +380,55 @@ pub struct TokenMeta {
     pub deployer_trading_fee_share: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
+/// Response for spotMetaAndAssetCtxs - a tuple of (SpotMeta, Vec<SpotAssetContext>)
+///
+/// The API returns `[{universe, tokens}, [...assetCtxs]]` as an array.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(from = "(SpotMeta, Vec<SpotAssetContext>)")]
+#[serde(into = "(SpotMeta, Vec<SpotAssetContext>)")]
 pub struct SpotMetaAndAssetCtxs {
-    pub universe: Vec<SpotPairMeta>,
-    pub tokens: Vec<TokenMeta>,
-    pub asset_ctxs: Vec<AssetContext>,
+    /// Spot metadata including universe and tokens
+    pub meta: SpotMeta,
+    /// Asset contexts for each spot pair
+    pub asset_ctxs: Vec<SpotAssetContext>,
+}
+
+impl From<(SpotMeta, Vec<SpotAssetContext>)> for SpotMetaAndAssetCtxs {
+    fn from((meta, asset_ctxs): (SpotMeta, Vec<SpotAssetContext>)) -> Self {
+        Self { meta, asset_ctxs }
+    }
+}
+
+impl From<SpotMetaAndAssetCtxs> for (SpotMeta, Vec<SpotAssetContext>) {
+    fn from(val: SpotMetaAndAssetCtxs) -> Self {
+        (val.meta, val.asset_ctxs)
+    }
+}
+
+/// Asset context for spot pairs (different from perp AssetContext)
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotAssetContext {
+    /// Coin/pair name (e.g., "PURR/USDC")
+    pub coin: String,
+    /// Previous day price
+    pub prev_day_px: String,
+    /// Daily notional volume
+    pub day_ntl_vlm: String,
+    /// Mark price
+    pub mark_px: String,
+    /// Mid price (can be null)
+    #[serde(default)]
+    pub mid_px: Option<String>,
+    /// Circulating supply
+    #[serde(default)]
+    pub circulating_supply: Option<String>,
+    /// Total supply
+    #[serde(default)]
+    pub total_supply: Option<String>,
+    /// Daily base volume
+    #[serde(default)]
+    pub day_base_vlm: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -521,28 +564,23 @@ pub struct VaultEquity {
 // ==================== Phase 2 New Types ====================
 
 /// Response for portfolio - comprehensive portfolio performance data
+///
+/// The API returns an array of tuples `[["day", {...}], ["week", {...}], ...]`
+/// where each tuple contains a time period and performance data.
+///
+/// Available periods: "day", "week", "month", "allTime", "perpDay", "perpWeek", "perpMonth", "perpAllTime"
+pub type Portfolio = Vec<(String, PortfolioPeriodData)>;
+
+/// Performance data for a single time period in the portfolio response
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Portfolio {
-    /// Account value in USD
-    pub account_value: String,
-    /// Total notional position value
-    pub total_ntl_pos: String,
-    /// Total margin used
-    pub total_margin_used: String,
-    /// Total raw USD
-    pub total_raw_usd: String,
-    /// Withdrawable amount
-    pub withdrawable: String,
-    /// Cumulative PnL
-    #[serde(default)]
-    pub cum_pnl: Option<String>,
-    /// Cumulative funding
-    #[serde(default)]
-    pub cum_funding: Option<String>,
-    /// Cumulative volume
-    #[serde(default)]
-    pub cum_vlm: Option<String>,
+pub struct PortfolioPeriodData {
+    /// Account value history as array of [timestamp, value] pairs
+    pub account_value_history: Vec<(u64, String)>,
+    /// PnL history as array of [timestamp, value] pairs
+    pub pnl_history: Vec<(u64, String)>,
+    /// Total volume for this period
+    pub vlm: String,
 }
 
 /// Response for userNonFundingLedgerUpdates - ledger activity
