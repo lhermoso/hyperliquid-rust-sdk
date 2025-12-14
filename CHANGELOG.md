@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Renamed package from `hyperliquid-rust-sdk` to `hyperliquid-sdk-rs` to allow publishing to crates.io (the previous name was taken). Import statements must be updated from `hyperliquid_rust_sdk` to `hyperliquid_sdk_rs` ([#34](https://github.com/lhermoso/hyperliquid-rust-sdk/issues/34))
+
 ### Added
 
 #### Info API (Phase 1)

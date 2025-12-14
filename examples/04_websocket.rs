@@ -4,7 +4,7 @@
 //! Phase 2 adds TWAP states, webData3, and active asset context subscriptions.
 
 use alloy::primitives::Address;
-use hyperliquid_rust_sdk::{providers::WsProvider, types::ws::Message, Network};
+use hyperliquid_sdk_rs::{providers::WsProvider, types::ws::Message, Network};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -8,7 +8,7 @@
 #[cfg(test)]
 mod tests {
     use alloy::primitives::address;
-    use hyperliquid_rust_sdk::types::ws::{
+    use hyperliquid_sdk_rs::types::ws::{
         AllMids, AllMidsData, BookLevel, Candle, CandleData, L2Book, L2BookData, Message,
         Subscription, Trade, Trades,
     };

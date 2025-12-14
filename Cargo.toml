@@ -1,5 +1,5 @@
 [package]
-name = "hyperliquid-rust-sdk"
+name = "hyperliquid-sdk-rs"
 description = "High-performance Rust SDK for Hyperliquid Protocol"
 version = "0.1.1"
 edition = "2021"

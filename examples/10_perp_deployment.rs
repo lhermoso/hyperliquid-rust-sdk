@@ -9,7 +9,7 @@
 //! This example demonstrates the perp deployment workflow.
 
 use alloy::signers::local::PrivateKeySigner;
-use hyperliquid_rust_sdk::{
+use hyperliquid_sdk_rs::{
     providers::InfoProvider, signers::AlloySigner, ExchangeProvider,
 };
 
@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Max Gas: 1000000");
 
     println!("\nCode:");
-    println!("  use hyperliquid_rust_sdk::types::actions::PerpDeployRegisterAsset;");
+    println!("  use hyperliquid_sdk_rs::types::actions::PerpDeployRegisterAsset;");
     println!("");
     println!("  let asset = PerpDeployRegisterAsset {{");
     println!("      dex: 1,");

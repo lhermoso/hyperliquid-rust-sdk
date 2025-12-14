@@ -6,7 +6,7 @@
 //!
 //! # Example
 //! ```ignore
-//! use hyperliquid_rust_sdk::providers::exchange::RawExchangeProvider;
+//! use hyperliquid_sdk_rs::providers::exchange::RawExchangeProvider;
 //!
 //! let provider = RawExchangeProvider::mainnet(signer);
 //! let response = provider.place_order(&order).await?;
@@ -1299,7 +1299,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
     ///
     /// # Example
     /// ```ignore
-    /// use hyperliquid_rust_sdk::types::actions::PerpDeployRegisterAsset;
+    /// use hyperliquid_sdk_rs::types::actions::PerpDeployRegisterAsset;
     ///
     /// let asset = PerpDeployRegisterAsset {
     ///     dex: 1,
@@ -1364,7 +1364,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
     ///
     /// # Example
     /// ```ignore
-    /// use hyperliquid_rust_sdk::types::actions::CValidatorRegister;
+    /// use hyperliquid_sdk_rs::types::actions::CValidatorRegister;
     ///
     /// let registration = CValidatorRegister {
     ///     node_ip: "192.168.1.1".to_string(),
@@ -1392,7 +1392,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
     ///
     /// # Example
     /// ```ignore
-    /// use hyperliquid_rust_sdk::types::actions::CValidatorChangeProfile;
+    /// use hyperliquid_sdk_rs::types::actions::CValidatorChangeProfile;
     ///
     /// let update = CValidatorChangeProfile {
     ///     node_ip: Some("192.168.1.2".to_string()),

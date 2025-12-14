@@ -10,7 +10,7 @@
 
 use alloy::primitives::Address;
 use alloy::signers::local::PrivateKeySigner;
-use hyperliquid_rust_sdk::{
+use hyperliquid_sdk_rs::{
     providers::InfoProvider, signers::AlloySigner, ExchangeProvider,
 };
 

@@ -12,7 +12,7 @@
 
 use alloy::primitives::Address;
 use alloy::signers::local::PrivateKeySigner;
-use hyperliquid_rust_sdk::{
+use hyperliquid_sdk_rs::{
     providers::InfoProvider, signers::AlloySigner, ExchangeProvider,
 };
 
@@ -182,7 +182,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\n[Demo mode - not executing actual registration]");
     println!("To register as a validator, call:");
-    println!("  use hyperliquid_rust_sdk::types::actions::CValidatorRegister;");
+    println!("  use hyperliquid_sdk_rs::types::actions::CValidatorRegister;");
     println!("");
     println!("  let registration = CValidatorRegister {{");
     println!("      node_ip: \"192.168.1.1\".to_string(),");
@@ -201,7 +201,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n--- Part 8: Validator Management ---\n");
 
     println!("Update validator profile:");
-    println!("  use hyperliquid_rust_sdk::types::actions::CValidatorChangeProfile;");
+    println!("  use hyperliquid_sdk_rs::types::actions::CValidatorChangeProfile;");
     println!("");
     println!("  let update = CValidatorChangeProfile {{");
     println!("      node_ip: Some(\"new_ip\".to_string()),");

@@ -8,14 +8,14 @@
 #[cfg(test)]
 mod tests {
     use alloy::primitives::{address, keccak256, B256};
-    use hyperliquid_rust_sdk::types::actions::{
+    use hyperliquid_sdk_rs::types::actions::{
         ApproveAgent, ApproveBuilderFee, BulkCancel, BulkModify, BulkOrder,
         ClassTransfer, CreateSubAccount, ScheduleCancel, SetReferrer, SpotSend, SpotUser,
         SubAccountSpotTransfer, SubAccountTransfer, TwapCancel, TwapOrder,
         UpdateIsolatedMargin, UpdateLeverage, UsdSend, VaultTransfer, Withdraw,
     };
-    use hyperliquid_rust_sdk::types::eip712::HyperliquidAction;
-    use hyperliquid_rust_sdk::types::requests::{
+    use hyperliquid_sdk_rs::types::eip712::HyperliquidAction;
+    use hyperliquid_sdk_rs::types::requests::{
         CancelRequest, ModifyRequest, OrderRequest,
     };
 

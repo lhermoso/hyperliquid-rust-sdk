@@ -1,7 +1,7 @@
 //! Tests for ManagedExchangeProvider
 
 use alloy::signers::local::PrivateKeySigner;
-use hyperliquid_rust_sdk::{
+use hyperliquid_sdk_rs::{
     constants::*,
     providers::{ManagedExchangeProvider, OrderHandle},
     types::requests::{Limit, OrderRequest, OrderType},
@@ -107,7 +107,7 @@ async fn test_alo_order_detection() {
 
 #[test]
 fn test_nonce_generation() {
-    use hyperliquid_rust_sdk::providers::nonce::NonceManager;
+    use hyperliquid_sdk_rs::providers::nonce::NonceManager;
 
     let manager = NonceManager::new(false);
 
@@ -122,7 +122,7 @@ fn test_nonce_generation() {
 #[test]
 fn test_nonce_isolation() {
     use alloy::primitives::Address;
-    use hyperliquid_rust_sdk::providers::nonce::NonceManager;
+    use hyperliquid_sdk_rs::providers::nonce::NonceManager;
 
     let manager = NonceManager::new(true);
     let addr1 = Address::new([1u8; 20]);

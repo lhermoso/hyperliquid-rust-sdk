@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use alloy::signers::local::PrivateKeySigner;
-    use hyperliquid_rust_sdk::{
+    use hyperliquid_sdk_rs::{
         constants::TIF_GTC, signers::AlloySigner, types::requests::OrderRequest,
         ExchangeProvider,
     };

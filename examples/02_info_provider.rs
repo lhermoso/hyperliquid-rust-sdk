@@ -1,7 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use alloy::primitives::Address;
-use hyperliquid_rust_sdk::providers::InfoProvider;
+use hyperliquid_sdk_rs::providers::InfoProvider;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

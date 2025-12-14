@@ -456,7 +456,7 @@ pub const USDC: Symbol = Symbol::from_static("USDC");
 ///
 /// # Example
 /// ```
-/// use hyperliquid_rust_sdk::types::symbols::symbol;
+/// use hyperliquid_sdk_rs::types::symbols::symbol;
 ///
 /// let new_coin = symbol("NEWCOIN");
 /// let new_spot = symbol("@999");
@@ -471,7 +471,7 @@ pub fn symbol(s: impl Into<String>) -> Symbol {
 ///
 /// # Example
 /// ```
-/// use hyperliquid_rust_sdk::types::symbols::prelude::*;
+/// use hyperliquid_sdk_rs::types::symbols::prelude::*;
 ///
 /// // Now you can use BTC, ETH, etc. directly
 /// assert_eq!(BTC.as_str(), "BTC");

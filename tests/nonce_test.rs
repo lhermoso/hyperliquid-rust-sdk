@@ -11,7 +11,7 @@
 #[cfg(test)]
 mod tests {
     use alloy::primitives::Address;
-    use hyperliquid_rust_sdk::providers::nonce::NonceManager;
+    use hyperliquid_sdk_rs::providers::nonce::NonceManager;
     use std::collections::HashSet;
     use std::sync::Arc;
     use std::time::{SystemTime, UNIX_EPOCH};

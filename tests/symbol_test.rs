@@ -8,7 +8,7 @@
 
 #[cfg(test)]
 mod tests {
-    use hyperliquid_rust_sdk::types::Symbol;
+    use hyperliquid_sdk_rs::types::Symbol;
 
     // ==================== Creation Tests ====================
 

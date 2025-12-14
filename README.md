@@ -6,7 +6,7 @@
 
 A high-performance Rust SDK for the Hyperliquid Protocol, built with a "thin wrapper, maximum control" philosophy.
 
-[![Crates.io](https://img.shields.io/crates/v/hyperliquid-rust-sdk.svg)](https://crates.io/crates/hyperliquid-rust-sdk)
+[![Crates.io](https://img.shields.io/crates/v/hyperliquid-sdk-rs.svg)](https://crates.io/crates/hyperliquid-sdk-rs)
 
 ## Features
 
@@ -23,7 +23,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hyperliquid-rust-sdk = "0.1.0"
+hyperliquid-sdk-rs = "0.1.0"
 ```
 
 ## Quick Start
@@ -31,7 +31,7 @@ hyperliquid-rust-sdk = "0.1.0"
 ### Reading Market Data
 
 ```rust
-use hyperliquid_rust_sdk::{InfoProvider, Network};
+use hyperliquid_sdk_rs::{InfoProvider, Network};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Placing Orders
 
 ```rust
-use hyperliquid_rust_sdk::{ExchangeProvider, signers::AlloySigner};
+use hyperliquid_sdk_rs::{ExchangeProvider, signers::AlloySigner};
 use alloy::signers::local::PrivateKeySigner;
 
 #[tokio::main]
@@ -79,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### WebSocket Subscriptions
 
 ```rust
-use hyperliquid_rust_sdk::{WsProvider, Network, types::ws::Message};
+use hyperliquid_sdk_rs::{WsProvider, Network, types::ws::Message};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -108,7 +108,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 For production use, consider the `ManagedWsProvider` which adds automatic reconnection and keep-alive:
 
 ```rust
-use hyperliquid_rust_sdk::{ManagedWsProvider, WsConfig, Network};
+use hyperliquid_sdk_rs::{ManagedWsProvider, WsConfig, Network};
 use std::time::Duration;
 
 #[tokio::main]
@@ -166,7 +166,7 @@ cargo run --example 02_info_provider
 The SDK follows a modular architecture:
 
 ```
-hyperliquid_rust_sdk/
+hyperliquid_sdk_rs/
 ├── providers/
 │   ├── info.rs      // Read-only market data (HTTP)
 │   ├── exchange.rs  // Trading operations (HTTP, requires signer)

@@ -8,7 +8,7 @@
 //! To run live tests:
 //! HYPERLIQUID_PRIVATE_KEY=0x... HYPERLIQUID_MAINNET=false cargo test --test info_provider_test
 
-use hyperliquid_rust_sdk::{InfoProvider, Network};
+use hyperliquid_sdk_rs::{InfoProvider, Network};
 use std::sync::Once;
 
 static INIT: Once = Once::new();
@@ -43,7 +43,7 @@ fn get_test_network() -> Network {
 
 #[cfg(test)]
 mod rate_limiter_tests {
-    use hyperliquid_rust_sdk::providers::info::RateLimiter;
+    use hyperliquid_sdk_rs::providers::info::RateLimiter;
 
     #[test]
     fn test_rate_limiter_creation() {

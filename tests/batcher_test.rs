@@ -11,7 +11,7 @@
 
 #[cfg(test)]
 mod tests {
-    use hyperliquid_rust_sdk::{
+    use hyperliquid_sdk_rs::{
         providers::batcher::{
             BatchConfig, OrderBatcher, OrderHandle, OrderPriority, PendingCancel,
             PendingOrder,

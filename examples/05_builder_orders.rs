@@ -2,7 +2,7 @@
 
 use alloy::primitives::{address, B256};
 use alloy::signers::local::PrivateKeySigner;
-use hyperliquid_rust_sdk::{providers::ExchangeProvider, signers::AlloySigner};
+use hyperliquid_sdk_rs::{providers::ExchangeProvider, signers::AlloySigner};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

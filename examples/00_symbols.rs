@@ -1,6 +1,6 @@
 //! Example showing how to use the Symbol type
 
-use hyperliquid_rust_sdk::types::{symbols, Symbol};
+use hyperliquid_sdk_rs::types::{symbols, Symbol};
 
 fn main() {
     // Using predefined constants

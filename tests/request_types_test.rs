@@ -9,7 +9,7 @@
 
 #[cfg(test)]
 mod tests {
-    use hyperliquid_rust_sdk::{
+    use hyperliquid_sdk_rs::{
         constants::{TIF_ALO, TIF_GTC, TIF_IOC},
         types::requests::{
             BuilderInfo, CancelRequest, CancelRequestCloid, Limit, ModifyRequest,
