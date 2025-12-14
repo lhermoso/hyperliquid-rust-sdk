@@ -135,6 +135,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `Clone` derive to `SpotMeta`, `SpotPairMeta`, and `TokenMeta` types
 
 ### Fixed
+- Fixed doc tests in `symbols.rs` that used incorrect crate name `ferrofluid` instead of `hyperliquid_rust_sdk` ([#23](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/23))
 - Fixed `portfolio(user)` endpoint deserialization - API returns array of time period tuples, not a flat object
 - Fixed `spot_meta_and_asset_ctxs()` endpoint deserialization - API returns a 2-element tuple array, not a single object with all fields
 - Replaced `is_some()` + `unwrap()` with idiomatic `match` pattern in `NonceManager::next_nonce()` ([#18](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/18))
