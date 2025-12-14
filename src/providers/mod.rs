@@ -16,7 +16,9 @@ pub use exchange::RawExchangeProvider;
 pub use websocket::RawWsProvider;
 
 // Managed providers
-pub use exchange::{ManagedExchangeConfig, ManagedExchangeProvider};
+pub use exchange::{
+    ManagedExchangeConfig, ManagedExchangeProvider, ManagedExchangeProviderBuilder,
+};
 pub use websocket::{ManagedWsProvider, WsConfig};
 
 // Common types

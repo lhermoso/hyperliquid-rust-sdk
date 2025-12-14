@@ -1,3 +1,25 @@
+//! Exchange provider for interacting with the Hyperliquid exchange API.
+//!
+//! This module provides two main types:
+//! - [`RawExchangeProvider`]: Low-level provider for direct API access
+//! - [`ManagedExchangeProvider`]: High-level provider with safety features and optimizations
+//!
+//! # Example
+//! ```ignore
+//! use hyperliquid_rust_sdk::providers::exchange::RawExchangeProvider;
+//!
+//! let provider = RawExchangeProvider::mainnet(signer);
+//! let response = provider.place_order(&order).await?;
+//! ```
+
+mod builder;
+mod managed;
+
+pub use builder::OrderBuilder;
+pub use managed::{
+    ManagedExchangeConfig, ManagedExchangeProvider, ManagedExchangeProviderBuilder,
+};
+
 use std::{
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
@@ -79,9 +101,9 @@ use crate::{
 
 type Result<T> = std::result::Result<T, HyperliquidError>;
 
-/// Format a float for use in API requests
-/// Formats to 8 decimal places and removes trailing zeros
-fn format_float_string(value: f64) -> String {
+/// Format a float for use in API requests.
+/// Formats to 8 decimal places and removes trailing zeros.
+pub(crate) fn format_float_string(value: f64) -> String {
     let mut x = format!("{:.8}", value);
     while x.ends_with('0') {
         x.pop();
@@ -96,6 +118,10 @@ fn format_float_string(value: f64) -> String {
     }
 }
 
+/// Raw exchange provider for direct API access.
+///
+/// This provider offers low-level access to all exchange endpoints.
+/// For most use cases, consider using [`ManagedExchangeProvider`] instead.
 pub struct RawExchangeProvider<S: HyperliquidSigner> {
     client: Client<HttpsConnector<HttpConnector>, Full<Bytes>>,
     endpoint: &'static str,
@@ -118,12 +144,12 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         }
     }
 
-    /// Get the configured builder address
+    /// Get the configured builder address.
     pub fn builder(&self) -> Option<Address> {
         self.builder
     }
 
-    /// Enable order tracking for this exchange instance
+    /// Enable order tracking for this exchange instance.
     pub fn with_order_tracking(mut self) -> Self {
         self.order_tracker = Some(OrderTracker::new());
         self
@@ -131,12 +157,12 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // ==================== Order Tracking Methods ====================
 
-    /// Get a tracked order by CLOID
+    /// Get a tracked order by CLOID.
     pub fn get_tracked_order(&self, cloid: &Uuid) -> Option<TrackedOrder> {
         self.order_tracker.as_ref()?.get_order(cloid)
     }
 
-    /// Get all tracked orders
+    /// Get all tracked orders.
     pub fn get_all_tracked_orders(&self) -> Vec<TrackedOrder> {
         self.order_tracker
             .as_ref()
@@ -144,7 +170,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .unwrap_or_default()
     }
 
-    /// Get orders by status
+    /// Get orders by status.
     pub fn get_orders_by_status(&self, status: &OrderStatus) -> Vec<TrackedOrder> {
         self.order_tracker
             .as_ref()
@@ -152,7 +178,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .unwrap_or_default()
     }
 
-    /// Get pending orders
+    /// Get pending orders.
     pub fn get_pending_orders(&self) -> Vec<TrackedOrder> {
         self.order_tracker
             .as_ref()
@@ -160,7 +186,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .unwrap_or_default()
     }
 
-    /// Get submitted orders
+    /// Get submitted orders.
     pub fn get_submitted_orders(&self) -> Vec<TrackedOrder> {
         self.order_tracker
             .as_ref()
@@ -168,7 +194,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .unwrap_or_default()
     }
 
-    /// Get failed orders
+    /// Get failed orders.
     pub fn get_failed_orders(&self) -> Vec<TrackedOrder> {
         self.order_tracker
             .as_ref()
@@ -176,14 +202,14 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .unwrap_or_default()
     }
 
-    /// Clear tracked orders
+    /// Clear tracked orders.
     pub fn clear_tracked_orders(&self) {
         if let Some(tracker) = &self.order_tracker {
             tracker.clear();
         }
     }
 
-    /// Get the number of tracked orders
+    /// Get the number of tracked orders.
     pub fn tracked_order_count(&self) -> usize {
         self.order_tracker
             .as_ref()
@@ -193,14 +219,17 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // ==================== Constructors ====================
 
+    /// Create a mainnet provider.
     pub fn mainnet(signer: S) -> Self {
         Self::new(signer, EXCHANGE_ENDPOINT_MAINNET, None, None, None)
     }
 
+    /// Create a testnet provider.
     pub fn testnet(signer: S) -> Self {
         Self::new(signer, EXCHANGE_ENDPOINT_TESTNET, None, None, None)
     }
 
+    /// Create a mainnet provider with vault.
     pub fn mainnet_vault(signer: S, vault_address: Address) -> Self {
         Self::new(
             signer,
@@ -211,6 +240,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         )
     }
 
+    /// Create a testnet provider with vault.
     pub fn testnet_vault(signer: S, vault_address: Address) -> Self {
         Self::new(
             signer,
@@ -221,6 +251,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         )
     }
 
+    /// Create a mainnet provider with agent.
     pub fn mainnet_agent(signer: S, agent_address: Address) -> Self {
         Self::new(
             signer,
@@ -231,6 +262,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         )
     }
 
+    /// Create a testnet provider with agent.
     pub fn testnet_agent(signer: S, agent_address: Address) -> Self {
         Self::new(
             signer,
@@ -241,7 +273,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         )
     }
 
-    // New builder-specific constructors
+    /// Create a mainnet provider with builder.
     pub fn mainnet_builder(signer: S, builder_address: Address) -> Self {
         Self::new(
             signer,
@@ -252,6 +284,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         )
     }
 
+    /// Create a testnet provider with builder.
     pub fn testnet_builder(signer: S, builder_address: Address) -> Self {
         Self::new(
             signer,
@@ -262,7 +295,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         )
     }
 
-    // Combined constructors
+    /// Create a mainnet provider with all options.
     pub fn mainnet_with_options(
         signer: S,
         vault: Option<Address>,
@@ -272,6 +305,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         Self::new(signer, EXCHANGE_ENDPOINT_MAINNET, vault, agent, builder)
     }
 
+    /// Create a testnet provider with all options.
     pub fn testnet_with_options(
         signer: S,
         vault: Option<Address>,
@@ -314,6 +348,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // ==================== Direct Order Operations ====================
 
+    /// Place a single order.
     pub async fn place_order(
         &self,
         order: &OrderRequest,
@@ -382,6 +417,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         result
     }
 
+    /// Place an order with a specific builder fee.
     pub async fn place_order_with_builder_fee(
         &self,
         order: &OrderRequest,
@@ -451,6 +487,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         result
     }
 
+    /// Place an order with a specific client order ID.
     pub async fn place_order_with_cloid(
         &self,
         mut order: OrderRequest,
@@ -461,6 +498,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.place_order(&order).await
     }
 
+    /// Cancel an order by order ID.
     pub async fn cancel_order(
         &self,
         asset: u32,
@@ -475,6 +513,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("cancel", &bulk_cancel).await
     }
 
+    /// Cancel an order by client order ID.
     pub async fn cancel_order_by_cloid(
         &self,
         asset: u32,
@@ -489,6 +528,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("cancelByCloid", &bulk_cancel).await
     }
 
+    /// Modify an existing order.
     pub async fn modify_order(
         &self,
         oid: u64,
@@ -508,6 +548,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // ==================== Bulk Operations ====================
 
+    /// Place multiple orders in a single request.
     pub async fn bulk_orders(
         &self,
         orders: Vec<OrderRequest>,
@@ -526,6 +567,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("order", &bulk_order).await
     }
 
+    /// Place multiple orders with a specific builder fee.
     pub async fn bulk_orders_with_builder_fee(
         &self,
         orders: Vec<OrderRequest>,
@@ -545,6 +587,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("order", &bulk_order).await
     }
 
+    /// Place multiple orders with client order IDs.
     pub async fn bulk_orders_with_cloids(
         &self,
         orders: Vec<(OrderRequest, Option<Uuid>)>,
@@ -557,6 +600,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.bulk_orders(orders).await
     }
 
+    /// Cancel multiple orders.
     pub async fn bulk_cancel(
         &self,
         cancels: Vec<CancelRequest>,
@@ -567,6 +611,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("cancel", &bulk_cancel).await
     }
 
+    /// Cancel multiple orders by client order ID.
     pub async fn bulk_cancel_by_cloid(
         &self,
         cancels: Vec<CancelRequestCloid>,
@@ -577,6 +622,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("cancelByCloid", &bulk_cancel).await
     }
 
+    /// Modify multiple orders.
     pub async fn bulk_modify(
         &self,
         modifies: Vec<ModifyRequest>,
@@ -589,6 +635,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // ==================== Account Management ====================
 
+    /// Update leverage for an asset.
     pub async fn update_leverage(
         &self,
         asset: u32,
@@ -603,6 +650,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("updateLeverage", &update).await
     }
 
+    /// Update isolated margin for an asset.
     pub async fn update_isolated_margin(
         &self,
         asset: u32,
@@ -617,6 +665,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("updateIsolatedMargin", &update).await
     }
 
+    /// Set a referrer code.
     pub async fn set_referrer(&self, code: String) -> Result<ExchangeResponseStatus> {
         let referrer = SetReferrer { code };
         self.send_l1_action("setReferrer", &referrer).await
@@ -624,6 +673,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // ==================== User Actions (EIP-712) ====================
 
+    /// Transfer USD to another address.
     pub async fn usd_transfer(
         &self,
         destination: Address,
@@ -647,6 +697,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_user_action(&action).await
     }
 
+    /// Withdraw funds to an address.
     pub async fn withdraw(
         &self,
         destination: Address,
@@ -670,6 +721,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_user_action(&action).await
     }
 
+    /// Transfer spot tokens to another address.
     pub async fn spot_transfer(
         &self,
         destination: Address,
@@ -696,6 +748,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_user_action(&action).await
     }
 
+    /// Approve an agent to act on behalf of this account.
     pub async fn approve_agent(
         &self,
         agent_address: Address,
@@ -719,8 +772,8 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_user_action(&action).await
     }
 
-    /// Approve a new agent, generating a random key like the original SDK
-    /// Returns (private_key_hex, response)
+    /// Approve a new agent, generating a random key like the original SDK.
+    /// Returns (private_key_hex, response).
     pub async fn approve_agent_new(&self) -> Result<(String, ExchangeResponseStatus)> {
         use alloy::primitives::B256;
         use alloy::signers::local::PrivateKeySigner;
@@ -765,6 +818,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         Ok((key_hex, response))
     }
 
+    /// Approve a builder fee.
     pub async fn approve_builder_fee(
         &self,
         builder: Address,
@@ -790,6 +844,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // ==================== Vault Operations ====================
 
+    /// Transfer funds to/from a vault.
     pub async fn vault_transfer(
         &self,
         vault_address: Address,
@@ -807,6 +862,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // ==================== Spot Operations ====================
 
+    /// Transfer between spot and perp accounts.
     pub async fn spot_transfer_to_perp(
         &self,
         usd_size: u64,
@@ -823,7 +879,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // ==================== Phase 1 New Actions ====================
 
-    /// Schedule automatic order cancellation
+    /// Schedule automatic order cancellation.
     ///
     /// Set a time at which all open orders will be cancelled.
     /// Pass `None` to cancel the scheduled cancellation.
@@ -835,7 +891,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("scheduleCancel", &action).await
     }
 
-    /// Create a sub-account
+    /// Create a sub-account.
     ///
     /// Sub-accounts are separate trading accounts under the same master account.
     /// They have isolated margin and positions.
@@ -847,7 +903,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("createSubAccount", &action).await
     }
 
-    /// Transfer USD to/from a sub-account
+    /// Transfer USD to/from a sub-account.
     ///
     /// * `sub_account_user` - The sub-account address
     /// * `is_deposit` - true to deposit to sub-account, false to withdraw from sub-account
@@ -866,7 +922,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("subAccountTransfer", &action).await
     }
 
-    /// Transfer spot tokens to/from a sub-account
+    /// Transfer spot tokens to/from a sub-account.
     ///
     /// * `sub_account_user` - The sub-account address
     /// * `is_deposit` - true to deposit to sub-account, false to withdraw from sub-account
@@ -889,7 +945,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("subAccountSpotTransfer", &action).await
     }
 
-    /// Transfer USD between perp and spot classes
+    /// Transfer USD between perp and spot classes.
     ///
     /// This is an alternative to `spot_transfer_to_perp` that takes a string amount.
     ///
@@ -909,7 +965,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // ==================== Phase 2 New Actions ====================
 
-    /// Place a TWAP (Time-Weighted Average Price) order
+    /// Place a TWAP (Time-Weighted Average Price) order.
     ///
     /// TWAP orders split a large order into smaller pieces executed over time
     /// to minimize market impact.
@@ -941,7 +997,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("twapOrder", &action).await
     }
 
-    /// Cancel a TWAP order
+    /// Cancel a TWAP order.
     ///
     /// * `asset` - Asset index
     /// * `twap_id` - The TWAP order ID to cancel
@@ -954,7 +1010,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("twapCancel", &action).await
     }
 
-    /// Convert account to multi-sig user
+    /// Convert account to multi-sig user.
     ///
     /// Once converted, actions require multiple signatures based on the threshold.
     ///
@@ -993,7 +1049,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_user_action(&action).await
     }
 
-    /// Execute a multi-sig transaction
+    /// Execute a multi-sig transaction.
     ///
     /// Used to execute actions on a multi-sig account with collected signatures.
     ///
@@ -1040,7 +1096,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.post(action_with_type, signature, nonce).await
     }
 
-    /// Enable DEX abstraction for the current agent
+    /// Enable DEX abstraction for the current agent.
     ///
     /// This allows the agent to interact with DEX features.
     pub async fn agent_enable_dex_abstraction(&self) -> Result<ExchangeResponseStatus> {
@@ -1053,7 +1109,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // --- Spot Deployment Actions ---
 
-    /// Register a new spot token
+    /// Register a new spot token.
     ///
     /// * `token_name` - Token name/symbol
     /// * `sz_decimals` - Size decimals for trading
@@ -1079,7 +1135,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .await
     }
 
-    /// User genesis for spot deployment
+    /// User genesis for spot deployment.
     ///
     /// * `token` - Token identifier
     /// * `user_and_wei` - List of (user address, wei amount) for initial distribution
@@ -1098,7 +1154,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("spotDeployUserGenesis", &action).await
     }
 
-    /// Freeze or unfreeze a user in spot deployment
+    /// Freeze or unfreeze a user in spot deployment.
     ///
     /// * `token` - Token identifier
     /// * `user` - User address to freeze/unfreeze
@@ -1117,7 +1173,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("spotDeployFreezeUser", &action).await
     }
 
-    /// Enable freeze privilege for a token
+    /// Enable freeze privilege for a token.
     ///
     /// * `token` - Token identifier
     pub async fn spot_deploy_enable_freeze_privilege(
@@ -1131,7 +1187,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .await
     }
 
-    /// Revoke freeze privilege for a token
+    /// Revoke freeze privilege for a token.
     ///
     /// * `token` - Token identifier
     pub async fn spot_deploy_revoke_freeze_privilege(
@@ -1145,7 +1201,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .await
     }
 
-    /// Enable quote token for spot deployment
+    /// Enable quote token for spot deployment.
     ///
     /// * `token` - Token identifier to enable as quote
     pub async fn spot_deploy_enable_quote_token(
@@ -1159,7 +1215,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .await
     }
 
-    /// Genesis for spot deployment
+    /// Genesis for spot deployment.
     ///
     /// * `token` - Token identifier
     /// * `max_supply` - Maximum supply
@@ -1178,7 +1234,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("spotDeployGenesis", &action).await
     }
 
-    /// Register a spot trading pair
+    /// Register a spot trading pair.
     ///
     /// * `base_token` - Base token identifier
     /// * `quote_token` - Quote token identifier
@@ -1194,7 +1250,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("spotDeployRegisterSpot", &action).await
     }
 
-    /// Register hyperliquidity for a spot pair
+    /// Register hyperliquidity for a spot pair.
     ///
     /// * `spot` - Spot pair identifier
     /// * `start_px` - Starting price
@@ -1220,7 +1276,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .await
     }
 
-    /// Set deployer trading fee share for a token
+    /// Set deployer trading fee share for a token.
     ///
     /// * `token` - Token identifier
     /// * `share` - Fee share as decimal string (e.g., "0.001" for 0.1%)
@@ -1239,7 +1295,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // --- Perp Deployment Actions ---
 
-    /// Register a perpetual asset
+    /// Register a perpetual asset.
     ///
     /// # Example
     /// ```ignore
@@ -1264,7 +1320,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("perpDeployRegisterAsset", &asset).await
     }
 
-    /// Set oracle for perpetual asset
+    /// Set oracle for perpetual asset.
     ///
     /// * `dex` - DEX identifier
     /// * `oracle_pxs` - Oracle prices
@@ -1288,7 +1344,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // --- Validator/Staking Actions ---
 
-    /// Unjail self (signer)
+    /// Unjail self (signer).
     ///
     /// Used to unjail a previously jailed signer.
     pub async fn c_signer_unjail_self(&self) -> Result<ExchangeResponseStatus> {
@@ -1296,7 +1352,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("cSignerUnjailSelf", &action).await
     }
 
-    /// Jail self (signer)
+    /// Jail self (signer).
     ///
     /// Used to voluntarily jail oneself as a signer.
     pub async fn c_signer_jail_self(&self) -> Result<ExchangeResponseStatus> {
@@ -1304,7 +1360,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("cSignerJailSelf", &action).await
     }
 
-    /// Register as a validator
+    /// Register as a validator.
     ///
     /// # Example
     /// ```ignore
@@ -1330,7 +1386,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .await
     }
 
-    /// Change validator profile
+    /// Change validator profile.
     ///
     /// All fields are optional - only provided values will be updated.
     ///
@@ -1357,13 +1413,13 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             .await
     }
 
-    /// Unregister as a validator
+    /// Unregister as a validator.
     pub async fn c_validator_unregister(&self) -> Result<ExchangeResponseStatus> {
         let action = CValidatorUnregister {};
         self.send_l1_action("cValidatorUnregister", &action).await
     }
 
-    /// Delegate tokens to a validator
+    /// Delegate tokens to a validator.
     ///
     /// * `validator` - Validator address to delegate to
     /// * `wei` - Amount in wei
@@ -1384,7 +1440,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     // --- Other Actions ---
 
-    /// Enable or disable large block mode
+    /// Enable or disable large block mode.
     ///
     /// * `enable` - Whether to enable (true) or disable (false) big blocks
     pub async fn use_big_blocks(&self, enable: bool) -> Result<ExchangeResponseStatus> {
@@ -1392,7 +1448,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         self.send_l1_action("useBigBlocks", &action).await
     }
 
-    /// No-operation action
+    /// No-operation action.
     ///
     /// Useful for testing or keeping connection alive.
     ///
@@ -1702,533 +1758,5 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
                 ))
             }
         })
-    }
-}
-
-// ==================== OrderBuilder Pattern ====================
-
-pub struct OrderBuilder<'a, S: HyperliquidSigner> {
-    provider: &'a RawExchangeProvider<S>,
-    asset: u32,
-    is_buy: Option<bool>,
-    limit_px: Option<String>,
-    sz: Option<String>,
-    reduce_only: bool,
-    order_type: Option<OrderType>,
-    cloid: Option<Uuid>,
-}
-
-impl<'a, S: HyperliquidSigner> OrderBuilder<'a, S> {
-    pub fn new(provider: &'a RawExchangeProvider<S>, asset: u32) -> Self {
-        Self {
-            provider,
-            asset,
-            is_buy: None,
-            limit_px: None,
-            sz: None,
-            reduce_only: false,
-            order_type: None,
-            cloid: None,
-        }
-    }
-
-    pub fn buy(mut self) -> Self {
-        self.is_buy = Some(true);
-        self
-    }
-
-    pub fn sell(mut self) -> Self {
-        self.is_buy = Some(false);
-        self
-    }
-
-    pub fn limit_px(mut self, price: impl ToString) -> Self {
-        self.limit_px = Some(price.to_string());
-        self
-    }
-
-    pub fn size(mut self, size: impl ToString) -> Self {
-        self.sz = Some(size.to_string());
-        self
-    }
-
-    pub fn reduce_only(mut self, reduce: bool) -> Self {
-        self.reduce_only = reduce;
-        self
-    }
-
-    pub fn order_type(mut self, order_type: OrderType) -> Self {
-        self.order_type = Some(order_type);
-        self
-    }
-
-    pub fn cloid(mut self, id: Uuid) -> Self {
-        self.cloid = Some(id);
-        self
-    }
-
-    // Convenience methods for common order types
-    pub fn limit_buy(self, price: impl ToString, size: impl ToString) -> Self {
-        self.buy().limit_px(price).size(size)
-    }
-
-    pub fn limit_sell(self, price: impl ToString, size: impl ToString) -> Self {
-        self.sell().limit_px(price).size(size)
-    }
-
-    pub fn trigger_buy(
-        self,
-        trigger_px: impl ToString,
-        size: impl ToString,
-        tpsl: &str,
-    ) -> Self {
-        let trigger_px_str = trigger_px.to_string();
-        self.buy()
-            .limit_px(&trigger_px_str) // limit_px must equal trigger_px for trigger orders
-            .size(size)
-            .order_type(OrderType::Trigger(Trigger {
-                is_market: true,
-                trigger_px: trigger_px_str,
-                tpsl: tpsl.to_string(),
-            }))
-    }
-
-    pub fn trigger_sell(
-        self,
-        trigger_px: impl ToString,
-        size: impl ToString,
-        tpsl: &str,
-    ) -> Self {
-        let trigger_px_str = trigger_px.to_string();
-        self.sell()
-            .limit_px(&trigger_px_str) // limit_px must equal trigger_px for trigger orders
-            .size(size)
-            .order_type(OrderType::Trigger(Trigger {
-                is_market: true,
-                trigger_px: trigger_px_str,
-                tpsl: tpsl.to_string(),
-            }))
-    }
-
-    pub fn build(self) -> Result<OrderRequest> {
-        let limit_px = self.limit_px.ok_or(HyperliquidError::InvalidRequest(
-            "limit_px must be specified".to_string(),
-        ))?;
-        let sz = self.sz.ok_or(HyperliquidError::InvalidRequest(
-            "sz must be specified".to_string(),
-        ))?;
-
-        // Parse and format the prices to match API expectations
-        let limit_px_f64 = limit_px.parse::<f64>().map_err(|_| {
-            HyperliquidError::InvalidRequest("Invalid limit_px format".to_string())
-        })?;
-        let sz_f64 = sz.parse::<f64>().map_err(|_| {
-            HyperliquidError::InvalidRequest("Invalid sz format".to_string())
-        })?;
-
-        Ok(OrderRequest {
-            asset: self.asset,
-            is_buy: self.is_buy.ok_or(HyperliquidError::InvalidRequest(
-                "is_buy must be specified".to_string(),
-            ))?,
-            limit_px: format_float_string(limit_px_f64),
-            sz: format_float_string(sz_f64),
-            reduce_only: self.reduce_only,
-            order_type: self.order_type.unwrap_or(OrderType::Limit(Limit {
-                tif: TIF_GTC.to_string(),
-            })),
-            cloid: self.cloid.map(|id| format!("{:032x}", id.as_u128())),
-        })
-    }
-
-    pub async fn send(self) -> Result<ExchangeResponseStatus> {
-        let provider = self.provider;
-        let order = self.build()?;
-        provider.place_order(&order).await
-    }
-}
-
-impl<S: HyperliquidSigner> RawExchangeProvider<S> {
-    pub fn order(&self, asset: u32) -> OrderBuilder<'_, S> {
-        OrderBuilder::new(self, asset)
-    }
-}
-
-// ==================== Managed Exchange Provider ====================
-
-use crate::providers::{
-    agent::{AgentConfig, AgentManager, AgentWallet},
-    batcher::{BatchConfig, OrderBatcher, OrderHandle},
-    nonce::NonceManager,
-};
-use tokio::sync::Mutex as TokioMutex;
-
-/// Configuration for managed exchange provider
-#[derive(Clone, Debug)]
-pub struct ManagedExchangeConfig {
-    /// Enable automatic order batching
-    pub batch_orders: bool,
-    /// Batch configuration
-    pub batch_config: BatchConfig,
-
-    /// Agent lifecycle management
-    pub auto_rotate_agents: bool,
-    /// Agent configuration
-    pub agent_config: AgentConfig,
-
-    /// Nonce isolation per subaccount
-    pub isolate_subaccount_nonces: bool,
-
-    /// Safety features
-    pub prevent_agent_address_queries: bool,
-    pub warn_on_high_nonce_velocity: bool,
-}
-
-impl Default for ManagedExchangeConfig {
-    fn default() -> Self {
-        Self {
-            batch_orders: false,
-            batch_config: BatchConfig::default(),
-            auto_rotate_agents: true,
-            agent_config: AgentConfig::default(),
-            isolate_subaccount_nonces: true,
-            prevent_agent_address_queries: true,
-            warn_on_high_nonce_velocity: true,
-        }
-    }
-}
-
-/// Managed exchange provider with safety features and optimizations
-pub struct ManagedExchangeProvider<S: HyperliquidSigner> {
-    /// Inner raw provider
-    inner: Arc<RawExchangeProvider<S>>,
-
-    /// Agent manager for lifecycle
-    agent_manager: Option<Arc<AgentManager<S>>>,
-
-    /// Nonce tracking
-    nonce_manager: Arc<NonceManager>,
-
-    /// Order batching
-    batcher: Option<Arc<OrderBatcher>>,
-    batcher_handle: Option<Arc<TokioMutex<Option<tokio::task::JoinHandle<()>>>>>,
-
-    /// Configuration
-    config: ManagedExchangeConfig,
-}
-
-impl<S: HyperliquidSigner + Clone + 'static> ManagedExchangeProvider<S> {
-    /// Create a builder for managed provider
-    pub fn builder(signer: S) -> ManagedExchangeProviderBuilder<S> {
-        ManagedExchangeProviderBuilder::new(signer)
-    }
-
-    /// Create with default configuration for mainnet
-    pub async fn mainnet(signer: S) -> Result<Arc<Self>> {
-        Self::builder(signer)
-            .with_network(Network::Mainnet)
-            .build()
-            .await
-    }
-
-    /// Create with default configuration for testnet
-    pub async fn testnet(signer: S) -> Result<Arc<Self>> {
-        Self::builder(signer)
-            .with_network(Network::Testnet)
-            .build()
-            .await
-    }
-
-    /// Place an order with all managed features
-    pub async fn place_order(&self, order: &OrderRequest) -> Result<OrderHandle> {
-        // Get nonce based on configuration
-        let nonce = if self.config.auto_rotate_agents {
-            if let Some(agent_mgr) = &self.agent_manager {
-                let agent = agent_mgr.get_or_rotate_agent("default").await?;
-                // Use agent's nonce
-                agent.next_nonce()
-            } else {
-                // Fallback to regular nonce
-                self.nonce_manager.next_nonce(None)
-            }
-        } else {
-            // Not using agents, use regular nonce
-            if self.config.isolate_subaccount_nonces {
-                // For subaccounts, we'd need to extract the address from somewhere
-                // For now, just use global nonce
-                self.nonce_manager.next_nonce(None)
-            } else {
-                self.nonce_manager.next_nonce(None)
-            }
-        };
-
-        // Check nonce validity
-        if !NonceManager::is_valid_nonce(nonce) {
-            return Err(HyperliquidError::InvalidRequest(
-                "Generated nonce is outside valid time bounds".to_string(),
-            ));
-        }
-
-        // For now, we always use the main provider
-        // In a full implementation, we'd need to handle agent signing differently
-        // This is a limitation of the current design where we can't easily swap signers
-
-        // Batch or direct execution
-        if self.config.batch_orders {
-            if let Some(batcher) = &self.batcher {
-                Ok(batcher.add_order(order.clone(), nonce).await)
-            } else {
-                // Fallback to direct
-                let result = self.inner.place_order(order).await?;
-                Ok(OrderHandle::Immediate(Ok(result)))
-            }
-        } else {
-            // Direct execution
-            let result = self.inner.place_order(order).await?;
-            Ok(OrderHandle::Immediate(Ok(result)))
-        }
-    }
-
-    /// Place order immediately, bypassing batch
-    pub async fn place_order_immediate(
-        &self,
-        order: &OrderRequest,
-    ) -> Result<ExchangeResponseStatus> {
-        self.inner.place_order(order).await
-    }
-
-    /// Access the raw provider for advanced usage
-    pub fn raw(&self) -> &RawExchangeProvider<S> {
-        &self.inner
-    }
-
-    /// Get current agent status
-    pub async fn get_agent_status(&self) -> Option<Vec<(String, AgentWallet)>> {
-        if let Some(agent_mgr) = &self.agent_manager {
-            Some(agent_mgr.get_active_agents().await)
-        } else {
-            None
-        }
-    }
-
-    /// Shutdown the managed provider cleanly
-    pub async fn shutdown(self: Arc<Self>) {
-        // Stop batcher if running
-        if let Some(handle_mutex) = &self.batcher_handle {
-            if let Some(handle) = handle_mutex.lock().await.take() {
-                handle.abort();
-            }
-        }
-    }
-}
-
-/// Builder for ManagedExchangeProvider
-pub struct ManagedExchangeProviderBuilder<S: HyperliquidSigner> {
-    signer: S,
-    network: Network,
-    config: ManagedExchangeConfig,
-    vault_address: Option<Address>,
-    initial_agent: Option<String>,
-    builder_address: Option<Address>,
-}
-
-impl<S: HyperliquidSigner + Clone + 'static> ManagedExchangeProviderBuilder<S> {
-    fn new(signer: S) -> Self {
-        Self {
-            signer,
-            network: Network::Mainnet,
-            config: ManagedExchangeConfig::default(),
-            vault_address: None,
-            initial_agent: None,
-            builder_address: None,
-        }
-    }
-
-    /// Set network
-    pub fn with_network(mut self, network: Network) -> Self {
-        self.network = network;
-        self
-    }
-
-    /// Enable automatic order batching
-    pub fn with_auto_batching(mut self, interval: std::time::Duration) -> Self {
-        self.config.batch_orders = true;
-        self.config.batch_config.interval = interval;
-        self
-    }
-
-    /// Configure agent rotation
-    pub fn with_agent_rotation(mut self, ttl: std::time::Duration) -> Self {
-        self.config.auto_rotate_agents = true;
-        self.config.agent_config.ttl = ttl;
-        self
-    }
-
-    /// Start with an agent
-    pub fn with_agent(mut self, name: Option<String>) -> Self {
-        self.initial_agent = name;
-        self.config.auto_rotate_agents = true;
-        self
-    }
-
-    /// Set vault address
-    pub fn with_vault(mut self, vault: Address) -> Self {
-        self.vault_address = Some(vault);
-        self
-    }
-
-    /// Set builder address
-    pub fn with_builder(mut self, builder: Address) -> Self {
-        self.builder_address = Some(builder);
-        self
-    }
-
-    /// Disable agent rotation
-    pub fn without_agent_rotation(mut self) -> Self {
-        self.config.auto_rotate_agents = false;
-        self
-    }
-
-    /// Build the provider
-    pub async fn build(self) -> Result<Arc<ManagedExchangeProvider<S>>> {
-        // Create raw provider
-        let raw = match self.network {
-            Network::Mainnet => {
-                if let Some(vault) = self.vault_address {
-                    RawExchangeProvider::mainnet_vault(self.signer.clone(), vault)
-                } else if let Some(builder) = self.builder_address {
-                    RawExchangeProvider::mainnet_builder(self.signer.clone(), builder)
-                } else {
-                    RawExchangeProvider::mainnet(self.signer.clone())
-                }
-            }
-            Network::Testnet => {
-                if let Some(vault) = self.vault_address {
-                    RawExchangeProvider::testnet_vault(self.signer.clone(), vault)
-                } else if let Some(builder) = self.builder_address {
-                    RawExchangeProvider::testnet_builder(self.signer.clone(), builder)
-                } else {
-                    RawExchangeProvider::testnet(self.signer.clone())
-                }
-            }
-        };
-
-        let inner = Arc::new(raw);
-
-        // Create agent manager if needed
-        let agent_manager = if self.config.auto_rotate_agents {
-            Some(Arc::new(AgentManager::new(
-                self.signer,
-                self.config.agent_config.clone(),
-                self.network,
-            )))
-        } else {
-            None
-        };
-
-        // Create nonce manager
-        let nonce_manager =
-            Arc::new(NonceManager::new(self.config.isolate_subaccount_nonces));
-
-        // Create batcher if needed
-        let (batcher, batcher_handle) = if self.config.batch_orders {
-            let (batcher, handle) = OrderBatcher::new(self.config.batch_config.clone());
-            let batcher = Arc::new(batcher);
-
-            // Spawn batch processing task
-            let inner_clone = inner.clone();
-            let inner_clone2 = inner.clone();
-            let handle_future = tokio::spawn(async move {
-                handle
-                    .run(
-                        move |orders| {
-                            let inner = inner_clone.clone();
-                            Box::pin(async move {
-                                // Execute batch
-                                let order_requests: Vec<OrderRequest> =
-                                    orders.iter().map(|o| o.order.clone()).collect();
-
-                                match inner.bulk_orders(order_requests).await {
-                                    Ok(status) => {
-                                        // Return same status for all orders in batch
-                                        orders
-                                            .iter()
-                                            .map(|_| Ok(status.clone()))
-                                            .collect()
-                                    }
-                                    Err(e) => {
-                                        // Return same error for all orders in batch
-                                        let err_str = e.to_string();
-                                        orders
-                                            .iter()
-                                            .map(|_| {
-                                                Err(HyperliquidError::InvalidResponse(
-                                                    err_str.clone(),
-                                                ))
-                                            })
-                                            .collect()
-                                    }
-                                }
-                            })
-                        },
-                        move |cancels| {
-                            let inner = inner_clone2.clone();
-                            Box::pin(async move {
-                                // Execute cancel batch
-                                let cancel_requests: Vec<CancelRequest> =
-                                    cancels.iter().map(|c| c.cancel.clone()).collect();
-
-                                match inner.bulk_cancel(cancel_requests).await {
-                                    Ok(status) => {
-                                        // Return same status for all cancels in batch
-                                        cancels
-                                            .iter()
-                                            .map(|_| Ok(status.clone()))
-                                            .collect()
-                                    }
-                                    Err(e) => {
-                                        // Return same error for all cancels in batch
-                                        let err_str = e.to_string();
-                                        cancels
-                                            .iter()
-                                            .map(|_| {
-                                                Err(HyperliquidError::InvalidResponse(
-                                                    err_str.clone(),
-                                                ))
-                                            })
-                                            .collect()
-                                    }
-                                }
-                            })
-                        },
-                    )
-                    .await;
-            });
-
-            (
-                Some(batcher),
-                Some(Arc::new(TokioMutex::new(Some(handle_future)))),
-            )
-        } else {
-            (None, None)
-        };
-
-        let provider = Arc::new(ManagedExchangeProvider {
-            inner,
-            agent_manager,
-            nonce_manager,
-            batcher,
-            batcher_handle,
-            config: self.config,
-        });
-
-        // Initialize agent if requested
-        if let Some(agent_name) = self.initial_agent {
-            if let Some(agent_mgr) = &provider.agent_manager {
-                agent_mgr.get_or_rotate_agent(&agent_name).await?;
-            }
-        }
-
-        Ok(provider)
     }
 }
