@@ -39,14 +39,13 @@ impl NonceManager {
             .as_millis() as u64;
 
         // Get counter increment
-        let counter = if self.isolate_per_address && address.is_some() {
-            let addr = address.unwrap();
-            self.counters
+        let counter = match (self.isolate_per_address, address) {
+            (true, Some(addr)) => self
+                .counters
                 .entry(addr)
                 .or_insert_with(|| AtomicU64::new(0))
-                .fetch_add(1, Ordering::Relaxed)
-        } else {
-            self.global_counter.fetch_add(1, Ordering::Relaxed)
+                .fetch_add(1, Ordering::Relaxed),
+            _ => self.global_counter.fetch_add(1, Ordering::Relaxed),
         };
 
         // Add sub-millisecond offset to ensure uniqueness
