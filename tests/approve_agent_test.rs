@@ -3,8 +3,8 @@
 #[cfg(test)]
 mod tests {
     use alloy::primitives::{address, keccak256};
-    use ferrofluid::types::actions::ApproveAgent;
-    use ferrofluid::types::eip712::HyperliquidAction;
+    use hyperliquid_rust_sdk::types::actions::ApproveAgent;
+    use hyperliquid_rust_sdk::types::eip712::HyperliquidAction;
 
     #[test]
     fn test_approve_agent_type_hash() {

@@ -1,10 +1,11 @@
 //! Tests for ManagedExchangeProvider
 
 use alloy::signers::local::PrivateKeySigner;
-use ferrofluid::{
+use hyperliquid_rust_sdk::{
     constants::*,
     providers::{ManagedExchangeProvider, OrderHandle},
     types::requests::{Limit, OrderRequest, OrderType},
+    Network,
 };
 use std::time::Duration;
 
@@ -21,7 +22,7 @@ async fn test_managed_provider_creation() {
 
     // Create managed provider with default config
     let exchange = ManagedExchangeProvider::builder(signer)
-        .with_network(ferrofluid::Network::Testnet)
+        .with_network(Network::Testnet)
         .build()
         .await;
 
@@ -40,7 +41,7 @@ async fn test_managed_provider_with_batching() {
 
     // Create with batching enabled
     let exchange = ManagedExchangeProvider::builder(signer)
-        .with_network(ferrofluid::Network::Testnet)
+        .with_network(Network::Testnet)
         .with_auto_batching(Duration::from_millis(50))
         .without_agent_rotation() // Disable for testing
         .build()
@@ -106,7 +107,7 @@ async fn test_alo_order_detection() {
 
 #[test]
 fn test_nonce_generation() {
-    use ferrofluid::providers::nonce::NonceManager;
+    use hyperliquid_rust_sdk::providers::nonce::NonceManager;
 
     let manager = NonceManager::new(false);
 
@@ -121,7 +122,7 @@ fn test_nonce_generation() {
 #[test]
 fn test_nonce_isolation() {
     use alloy::primitives::Address;
-    use ferrofluid::providers::nonce::NonceManager;
+    use hyperliquid_rust_sdk::providers::nonce::NonceManager;
 
     let manager = NonceManager::new(true);
     let addr1 = Address::new([1u8; 20]);

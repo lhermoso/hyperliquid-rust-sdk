@@ -114,6 +114,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `10_perp_deployment.rs` - Perpetual asset deployment and oracle configuration
 - Added `11_order_tracking.rs` - Order tracking system with automatic CLOID management
 
+#### Tests
+- Added comprehensive test coverage for SDK public API (from 11 to 210 tests)
+- Added `tests/symbol_test.rs` - Symbol type creation, type detection, serialization (25 tests)
+- Added `tests/request_types_test.rs` - OrderRequest, CancelRequest, ModifyRequest (30 tests)
+- Added `tests/order_builder_test.rs` - OrderBuilder fluent API, validation (28 tests)
+- Added `tests/action_types_test.rs` - EIP-712 type hashes, action serialization (36 tests)
+- Added `tests/websocket_types_test.rs` - Subscription and message serialization (34 tests)
+- Added `tests/info_provider_test.rs` - RateLimiter unit tests and optional live API tests (24 tests)
+
 ### Changed
 - Added `Clone` derive to `MarginSummary` type
 - Added `Clone` derive to `EvmContract` type
