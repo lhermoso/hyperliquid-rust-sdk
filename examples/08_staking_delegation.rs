@@ -182,31 +182,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\n[Demo mode - not executing actual registration]");
     println!("To register as a validator, call:");
-    println!("  exchange.c_validator_register(");
-    println!("      \"192.168.1.1\",                   // node_ip");
-    println!("      \"My Validator\",                   // name");
-    println!("      \"Secure and reliable validator\",  // description");
-    println!("      false,                             // delegations_disabled");
-    println!("      500,                               // commission_bps (5%)");
-    println!("      signer_address,                    // signer");
-    println!("      true,                              // unjailed");
-    println!("      \"10000000000000000000000\"        // initial_wei (10,000 HYPE)");
-    println!("  ).await");
+    println!("  use hyperliquid_rust_sdk::types::actions::CValidatorRegister;");
+    println!("");
+    println!("  let registration = CValidatorRegister {{");
+    println!("      node_ip: \"192.168.1.1\".to_string(),");
+    println!("      name: \"My Validator\".to_string(),");
+    println!("      description: \"Secure and reliable validator\".to_string(),");
+    println!("      delegations_disabled: false,");
+    println!("      commission_bps: 500, // 5%");
+    println!("      signer: format!(\"{{:#x}}\", signer_address),");
+    println!("      unjailed: true,");
+    println!("      initial_wei: \"10000000000000000000000\".to_string(),");
+    println!("  }};");
+    println!("  exchange.c_validator_register(registration).await");
 
     // ==================== Part 8: Validator Management ====================
 
     println!("\n--- Part 8: Validator Management ---\n");
 
     println!("Update validator profile:");
-    println!("  exchange.c_validator_change_profile(");
-    println!("      Some(\"new_ip\".to_string()),       // update node_ip");
-    println!("      Some(\"New Name\".to_string()),     // update name");
-    println!("      None,                              // keep description");
-    println!("      None,                              // keep unjailed status");
-    println!("      None,                              // keep delegations enabled");
-    println!("      Some(300),                         // new commission (3%)");
-    println!("      None                               // keep signer");
-    println!("  ).await");
+    println!("  use hyperliquid_rust_sdk::types::actions::CValidatorChangeProfile;");
+    println!("");
+    println!("  let update = CValidatorChangeProfile {{");
+    println!("      node_ip: Some(\"new_ip\".to_string()),");
+    println!("      name: Some(\"New Name\".to_string()),");
+    println!("      description: None,  // keep existing");
+    println!("      unjailed: None,     // keep existing");
+    println!("      disable_delegations: None,");
+    println!("      commission_bps: Some(300), // 3%");
+    println!("      signer: None,       // keep existing");
+    println!("  }};");
+    println!("  exchange.c_validator_change_profile(update).await");
 
     println!("\nJail/Unjail operations:");
     println!("  exchange.c_signer_jail_self().await    // Voluntarily jail");

@@ -198,7 +198,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n=== Testing portfolio endpoint ===");
     match info.portfolio(user).await {
         Ok(portfolio) => {
-            println!("Portfolio data retrieved ({} time periods):", portfolio.len());
+            println!(
+                "Portfolio data retrieved ({} time periods):",
+                portfolio.len()
+            );
             for (period, data) in portfolio.iter().take(3) {
                 println!("  Period: {}", period);
                 println!("    Volume: {}", data.vlm);

@@ -77,16 +77,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Max Gas: 1000000");
 
     println!("\nCode:");
-    println!("  exchange.perp_deploy_register_asset(");
-    println!("      1,              // dex");
-    println!("      \"1000000\",     // max_gas");
-    println!("      \"MYPERP\",      // coin");
-    println!("      4,              // sz_decimals");
-    println!("      \"100.0\",       // oracle_px");
-    println!("      None,           // margin_table_id (use default)");
-    println!("      Some(false),    // only_isolated (allow cross margin)");
-    println!("      None            // schema (use default)");
-    println!("  ).await");
+    println!("  use hyperliquid_rust_sdk::types::actions::PerpDeployRegisterAsset;");
+    println!("");
+    println!("  let asset = PerpDeployRegisterAsset {{");
+    println!("      dex: 1,");
+    println!("      max_gas: \"1000000\".to_string(),");
+    println!("      coin: \"MYPERP\".to_string(),");
+    println!("      sz_decimals: 4,");
+    println!("      oracle_px: \"100.0\".to_string(),");
+    println!("      margin_table_id: None,");
+    println!("      only_isolated: Some(false),");
+    println!("      schema: None,");
+    println!("  }};");
+    println!("  exchange.perp_deploy_register_asset(asset).await");
 
     println!("\n=== STEP 2: Set Oracle Prices ===\n");
 
