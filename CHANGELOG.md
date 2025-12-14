@@ -117,6 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Added `Clone` derive to `MarginSummary` type
 - Added `Clone` derive to `EvmContract` type
+- Aligned library import name with crate name - now import as `hyperliquid_rust_sdk` instead of `ferrofluid` ([#10](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/10))
 
 ## [0.1.1] - 2024-XX-XX
 
