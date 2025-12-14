@@ -138,20 +138,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Examples
 
-The `examples/` directory contains comprehensive examples:
+The `examples/` directory contains comprehensive examples covering all SDK features:
 
+### Core Examples
 - `00_symbols.rs` - Working with pre-defined symbols
 - `01_info_types.rs` - Using the Info provider for market data
-- `02_info_provider.rs` - Advanced Info provider usage
-- `03_exchange_provider.rs` - Placing and managing orders
-- `04_websocket.rs` - Real-time WebSocket subscriptions
+- `02_info_provider.rs` - Complete Info API coverage (Phase 1, 2, & 3 endpoints)
+- `03_exchange_provider.rs` - Complete Exchange API coverage (Phase 1, 2, & 3 endpoints)
+- `04_websocket.rs` - Real-time WebSocket subscriptions (Phase 1 & 2)
 - `05_builder_orders.rs` - Using MEV builders for orders
-- `06_basis_trade.rs` - Example basis trading strategy
-- `07_managed_websocket.rs` - WebSocket with auto-reconnect and keep-alive
+
+### Advanced Examples
+- `06_twap_orders.rs` - TWAP (Time-Weighted Average Price) order workflows
+- `07_multi_sig.rs` - Multi-signature account operations
+- `08_staking_delegation.rs` - Token staking and validator delegation
+- `09_spot_deployment.rs` - Deploying custom spot tokens
+- `10_perp_deployment.rs` - Deploying custom perpetual markets
+- `11_order_tracking.rs` - Order tracking system with CLOIDs
 
 Run examples with:
 ```bash
-cargo run --example 01_info_types
+cargo run --example 02_info_provider
 ```
 
 ## Architecture

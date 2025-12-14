@@ -103,6 +103,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated README with fork attribution to ControlCplusControlV/ferrofluid and new package name ([#2](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/2))
 - Updated API_AUDIT.md to reflect Phase 2 completion status
 
+#### Examples
+- Updated `02_info_provider.rs` with Phase 2 & 3 Info API endpoints coverage
+- Updated `03_exchange_provider.rs` with Phase 2 & 3 Exchange API examples
+- Updated `04_websocket.rs` with Phase 2 WebSocket subscriptions (TWAP, webData3, active asset)
+- Added `06_twap_orders.rs` - Complete TWAP order workflow example (placing, monitoring, cancelling)
+- Added `07_multi_sig.rs` - Multi-signature account operations and configuration
+- Added `08_staking_delegation.rs` - Token staking, delegation, and validator operations
+- Added `09_spot_deployment.rs` - Complete spot token deployment workflow
+- Added `10_perp_deployment.rs` - Perpetual asset deployment and oracle configuration
+- Added `11_order_tracking.rs` - Order tracking system with automatic CLOID management
+
 ### Changed
 - Added `Clone` derive to `MarginSummary` type
 - Added `Clone` derive to `EvmContract` type
