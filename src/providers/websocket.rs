@@ -410,7 +410,7 @@ impl Drop for RawWsProvider {
 
 // ==================== Enhanced WebSocket Provider ====================
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 
@@ -451,8 +451,6 @@ impl Default for WsConfig {
 struct ManagedSubscription {
     subscription: Subscription,
     tx: UnboundedSender<Message>,
-    #[allow(dead_code)]
-    created_at: Instant, // For future use: subscription age tracking
 }
 
 /// Managed WebSocket provider with automatic keep-alive and reconnection
@@ -679,7 +677,6 @@ impl ManagedWsProvider {
             ManagedSubscription {
                 subscription,
                 tx: tx.clone(),
-                created_at: Instant::now(),
             },
         );
 
