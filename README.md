@@ -23,7 +23,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hyperliquid-sdk-rs = "0.1.0"
+hyperliquid-sdk-rs = "0.1.1"
 ```
 
 ## Quick Start
@@ -168,16 +168,21 @@ The SDK follows a modular architecture:
 ```
 hyperliquid_sdk_rs/
 ├── providers/
-│   ├── info.rs      // Read-only market data (HTTP)
-│   ├── exchange.rs  // Trading operations (HTTP, requires signer)
-│   └── websocket.rs // Real-time subscriptions
+│   ├── info.rs          // Read-only market data (HTTP)
+│   ├── exchange/        // Trading operations (module)
+│   │   ├── mod.rs       // RawExchangeProvider
+│   │   ├── builder.rs   // OrderBuilder pattern
+│   │   └── managed.rs   // ManagedExchangeProvider
+│   └── websocket.rs     // Real-time subscriptions
 ├── types/
-│   ├── actions.rs   // EIP-712 signable actions
-│   ├── requests.rs  // Order, Cancel, Modify structs
-│   ├── responses.rs // API response types
-│   └── ws.rs        // WebSocket message types
+│   ├── actions.rs       // EIP-712 signable actions
+│   ├── requests.rs      // Order, Cancel, Modify structs
+│   ├── responses.rs     // API response types
+│   ├── info_types.rs    // Info API response types
+│   └── ws.rs            // WebSocket message types
 └── signers/
-    └── signer.rs    // HyperliquidSigner trait
+    ├── signer.rs        // HyperliquidSigner trait, AlloySigner
+    └── privy.rs         // Privy signer support
 ```
 
 ## Performance
