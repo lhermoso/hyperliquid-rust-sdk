@@ -134,6 +134,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING**: `SpotMetaAndAssetCtxs` type restructured to correctly deserialize the API's `[{universe, tokens}, [...assetCtxs]]` tuple format; now has `meta: SpotMeta` and `asset_ctxs: Vec<SpotAssetContext>` fields
 - Added `Clone` derive to `SpotMeta`, `SpotPairMeta`, and `TokenMeta` types
 
+### Refactored
+- Replaced bare `.unwrap()` with `.expect()` for Mutex/RwLock and SystemTime operations to improve panic debugging ([#29](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/29))
+
 ### Fixed
 - Fixed doc tests in `symbols.rs` that used incorrect crate name `ferrofluid` instead of `hyperliquid_rust_sdk` ([#23](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/23))
 - Fixed `portfolio(user)` endpoint deserialization - API returns array of time period tuples, not a flat object
