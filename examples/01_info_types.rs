@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use ferrofluid::types::{L2SnapshotResponse, UserStateResponse};
+use hyperliquid_rust_sdk::types::{L2SnapshotResponse, UserStateResponse};
 
 fn main() {
     // Example of deserializing API responses into our flat types

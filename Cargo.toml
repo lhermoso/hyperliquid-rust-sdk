@@ -8,9 +8,6 @@ authors = ["Leo Hermoso"]
 license = "MIT"
 repository = "https://github.com/lhermoso/hyperliquid-rust-sdk"
 
-[lib]
-name = "ferrofluid"
-
 [dependencies]
 alloy = { version = "0.1", features = [ "full" ] }
 

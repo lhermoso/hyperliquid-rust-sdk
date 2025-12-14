@@ -9,7 +9,7 @@
 //! This example demonstrates the perp deployment workflow.
 
 use alloy::signers::local::PrivateKeySigner;
-use ferrofluid::{providers::InfoProvider, signers::AlloySigner, ExchangeProvider};
+use hyperliquid_rust_sdk::{providers::InfoProvider, signers::AlloySigner, ExchangeProvider};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

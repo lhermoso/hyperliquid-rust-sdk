@@ -1,6 +1,6 @@
 //! Example showing how to use the Symbol type
 
-use ferrofluid::types::{symbols, Symbol};
+use hyperliquid_rust_sdk::types::{symbols, Symbol};
 
 fn main() {
     // Using predefined constants

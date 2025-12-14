@@ -6,9 +6,9 @@
 
 use alloy::primitives::Address;
 use alloy::signers::local::PrivateKeySigner;
-use ferrofluid::constants::TIF_GTC;
-use ferrofluid::types::requests::OrderRequest;
-use ferrofluid::{signers::AlloySigner, ExchangeProvider};
+use hyperliquid_rust_sdk::constants::TIF_GTC;
+use hyperliquid_rust_sdk::types::requests::OrderRequest;
+use hyperliquid_rust_sdk::{signers::AlloySigner, ExchangeProvider};
 use uuid::Uuid;
 
 #[tokio::main]

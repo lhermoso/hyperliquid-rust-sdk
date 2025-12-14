@@ -31,20 +31,20 @@ hyperliquid-rust-sdk = "0.1.0"
 ### Reading Market Data
 
 ```rust
-use ferrofluid::{InfoProvider, Network};
+use hyperliquid_rust_sdk::{InfoProvider, Network};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let info = InfoProvider::new(Network::Mainnet);
-    
+
     // Get all mid prices
     let mids = info.all_mids().await?;
     println!("BTC mid price: {}", mids["BTC"]);
-    
+
     // Get L2 order book
     let book = info.l2_book("ETH").await?;
     println!("ETH best bid: {:?}", book.levels[0][0]);
-    
+
     Ok(())
 }
 ```
@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Placing Orders
 
 ```rust
-use ferrofluid::{ExchangeProvider, signers::AlloySigner};
+use hyperliquid_rust_sdk::{ExchangeProvider, signers::AlloySigner};
 use alloy::signers::local::PrivateKeySigner;
 
 #[tokio::main]
@@ -60,17 +60,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Setup signer
     let signer = PrivateKeySigner::random();
     let hyperliquid_signer = AlloySigner { inner: signer };
-    
+
     // Create exchange provider
     let exchange = ExchangeProvider::mainnet(hyperliquid_signer);
-    
+
     // Place an order using the builder pattern
     let result = exchange.order(0) // BTC perpetual
         .limit_buy("50000", "0.001")
         .reduce_only(false)
         .send()
         .await?;
-        
+
     println!("Order placed: {:?}", result);
     Ok(())
 }
@@ -79,16 +79,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### WebSocket Subscriptions
 
 ```rust
-use ferrofluid::{WsProvider, Network, types::ws::Message};
+use hyperliquid_rust_sdk::{WsProvider, Network, types::ws::Message};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut ws = WsProvider::connect(Network::Mainnet).await?;
-    
+
     // Subscribe to BTC order book
     let (_id, mut rx) = ws.subscribe_l2_book("BTC").await?;
     ws.start_reading().await?;
-    
+
     // Handle updates
     while let Some(msg) = rx.recv().await {
         match msg {
@@ -98,7 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => {}
         }
     }
-    
+
     Ok(())
 }
 ```
@@ -108,7 +108,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 For production use, consider the `ManagedWsProvider` which adds automatic reconnection and keep-alive:
 
 ```rust
-use ferrofluid::{ManagedWsProvider, WsConfig, Network};
+use hyperliquid_rust_sdk::{ManagedWsProvider, WsConfig, Network};
 use std::time::Duration;
 
 #[tokio::main]
@@ -120,18 +120,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         exponential_backoff: true,
         ..Default::default()
     };
-    
+
     let ws = ManagedWsProvider::connect(Network::Mainnet, config).await?;
-    
+
     // Subscriptions automatically restore on reconnect
     let (_id, mut rx) = ws.subscribe_l2_book("BTC").await?;
     ws.start_reading().await?;
-    
+
     // Your subscriptions survive disconnections!
     while let Some(msg) = rx.recv().await {
         // Handle messages...
     }
-    
+
     Ok(())
 }
 ```
@@ -163,10 +163,10 @@ cargo run --example 02_info_provider
 
 ## Architecture
 
-Ferrofluid follows a modular architecture:
+The SDK follows a modular architecture:
 
 ```
-ferrofluid/
+hyperliquid_rust_sdk/
 ├── providers/
 │   ├── info.rs      // Read-only market data (HTTP)
 │   ├── exchange.rs  // Trading operations (HTTP, requires signer)
@@ -182,7 +182,7 @@ ferrofluid/
 
 ## Performance
 
-Ferrofluid is designed for maximum performance:
+The SDK is designed for maximum performance:
 
 - **JSON Parsing**: Uses `simd-json` for vectorized parsing
 - **HTTP Client**: Built on `hyper` + `tower` for connection pooling

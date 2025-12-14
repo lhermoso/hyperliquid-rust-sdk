@@ -13,7 +13,7 @@
 //! - Querying TWAP fills
 
 use alloy::signers::local::PrivateKeySigner;
-use ferrofluid::{
+use hyperliquid_rust_sdk::{
     providers::{InfoProvider, WsProvider},
     signers::AlloySigner,
     types::ws::Message,
