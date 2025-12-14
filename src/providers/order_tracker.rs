@@ -43,7 +43,7 @@ impl OrderTracker {
             response: None,
         };
 
-        let mut orders = self.orders.write().unwrap();
+        let mut orders = self.orders.write().expect("order tracker rwlock poisoned");
         orders.insert(cloid, tracked);
     }
 
@@ -54,7 +54,7 @@ impl OrderTracker {
         status: OrderStatus,
         response: Option<ExchangeResponseStatus>,
     ) {
-        let mut orders = self.orders.write().unwrap();
+        let mut orders = self.orders.write().expect("order tracker rwlock poisoned");
         if let Some(order) = orders.get_mut(cloid) {
             order.status = status;
             order.response = response;
@@ -63,19 +63,19 @@ impl OrderTracker {
 
     /// Get a specific order by CLOID
     pub fn get_order(&self, cloid: &Uuid) -> Option<TrackedOrder> {
-        let orders = self.orders.read().unwrap();
+        let orders = self.orders.read().expect("order tracker rwlock poisoned");
         orders.get(cloid).cloned()
     }
 
     /// Get all tracked orders
     pub fn get_all_orders(&self) -> Vec<TrackedOrder> {
-        let orders = self.orders.read().unwrap();
+        let orders = self.orders.read().expect("order tracker rwlock poisoned");
         orders.values().cloned().collect()
     }
 
     /// Get orders by status
     pub fn get_orders_by_status(&self, status: &OrderStatus) -> Vec<TrackedOrder> {
-        let orders = self.orders.read().unwrap();
+        let orders = self.orders.read().expect("order tracker rwlock poisoned");
         orders
             .values()
             .filter(|order| &order.status == status)
@@ -95,7 +95,7 @@ impl OrderTracker {
 
     /// Get failed orders
     pub fn get_failed_orders(&self) -> Vec<TrackedOrder> {
-        let orders = self.orders.read().unwrap();
+        let orders = self.orders.read().expect("order tracker rwlock poisoned");
         orders
             .values()
             .filter(|order| matches!(order.status, OrderStatus::Failed(_)))
@@ -105,19 +105,19 @@ impl OrderTracker {
 
     /// Clear all tracked orders
     pub fn clear(&self) {
-        let mut orders = self.orders.write().unwrap();
+        let mut orders = self.orders.write().expect("order tracker rwlock poisoned");
         orders.clear();
     }
 
     /// Get the number of tracked orders
     pub fn len(&self) -> usize {
-        let orders = self.orders.read().unwrap();
+        let orders = self.orders.read().expect("order tracker rwlock poisoned");
         orders.len()
     }
 
     /// Check if tracking is empty
     pub fn is_empty(&self) -> bool {
-        let orders = self.orders.read().unwrap();
+        let orders = self.orders.read().expect("order tracker rwlock poisoned");
         orders.is_empty()
     }
 }

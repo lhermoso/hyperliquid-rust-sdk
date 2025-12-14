@@ -35,7 +35,7 @@ impl NonceManager {
     pub fn next_nonce(&self, address: Option<Address>) -> u64 {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("system time before UNIX epoch")
             .as_millis() as u64;
 
         // Get counter increment
@@ -80,7 +80,7 @@ impl NonceManager {
     pub fn is_valid_nonce(nonce: u64) -> bool {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("system time before UNIX epoch")
             .as_millis() as u64;
 
         // Must be within (T - 2 days, T + 1 day)
@@ -131,7 +131,7 @@ mod tests {
     fn test_nonce_validity() {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("system time before UNIX epoch")
             .as_millis() as u64;
 
         // Valid: current time
