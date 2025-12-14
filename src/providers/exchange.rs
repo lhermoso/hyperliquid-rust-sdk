@@ -1241,37 +1241,27 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     /// Register a perpetual asset
     ///
-    /// * `dex` - DEX identifier
-    /// * `max_gas` - Maximum gas for deployment
-    /// * `coin` - Coin name/symbol
-    /// * `sz_decimals` - Size decimals for trading
-    /// * `oracle_px` - Oracle price
-    /// * `margin_table_id` - Optional margin table ID
-    /// * `only_isolated` - Whether to use isolated margin only
-    /// * `schema` - Optional schema type
+    /// # Example
+    /// ```ignore
+    /// use hyperliquid_rust_sdk::types::actions::PerpDeployRegisterAsset;
+    ///
+    /// let asset = PerpDeployRegisterAsset {
+    ///     dex: 1,
+    ///     max_gas: "1000000".to_string(),
+    ///     coin: "MYPERP".to_string(),
+    ///     sz_decimals: 4,
+    ///     oracle_px: "100.0".to_string(),
+    ///     margin_table_id: None,
+    ///     only_isolated: Some(false),
+    ///     schema: None,
+    /// };
+    /// exchange.perp_deploy_register_asset(asset).await?;
+    /// ```
     pub async fn perp_deploy_register_asset(
         &self,
-        dex: u32,
-        max_gas: impl Into<String>,
-        coin: impl Into<String>,
-        sz_decimals: u32,
-        oracle_px: impl Into<String>,
-        margin_table_id: Option<u32>,
-        only_isolated: Option<bool>,
-        schema: Option<String>,
+        asset: PerpDeployRegisterAsset,
     ) -> Result<ExchangeResponseStatus> {
-        let action = PerpDeployRegisterAsset {
-            dex,
-            max_gas: max_gas.into(),
-            coin: coin.into(),
-            sz_decimals,
-            oracle_px: oracle_px.into(),
-            margin_table_id,
-            only_isolated,
-            schema,
-        };
-        self.send_l1_action("perpDeployRegisterAsset", &action)
-            .await
+        self.send_l1_action("perpDeployRegisterAsset", &asset).await
     }
 
     /// Set oracle for perpetual asset
@@ -1316,61 +1306,54 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
 
     /// Register as a validator
     ///
-    /// * `node_ip` - Node IP address
-    /// * `name` - Validator name
-    /// * `description` - Validator description
-    /// * `delegations_disabled` - Whether delegations are disabled
-    /// * `commission_bps` - Commission in basis points
-    /// * `signer` - Signer address
-    /// * `unjailed` - Whether initially unjailed
-    /// * `initial_wei` - Initial wei stake
+    /// # Example
+    /// ```ignore
+    /// use hyperliquid_rust_sdk::types::actions::CValidatorRegister;
+    ///
+    /// let registration = CValidatorRegister {
+    ///     node_ip: "192.168.1.1".to_string(),
+    ///     name: "My Validator".to_string(),
+    ///     description: "Secure and reliable validator".to_string(),
+    ///     delegations_disabled: false,
+    ///     commission_bps: 500, // 5%
+    ///     signer: format!("{:#x}", signer_address),
+    ///     unjailed: true,
+    ///     initial_wei: "10000000000000000000000".to_string(), // 10,000 HYPE
+    /// };
+    /// exchange.c_validator_register(registration).await?;
+    /// ```
     pub async fn c_validator_register(
         &self,
-        node_ip: impl Into<String>,
-        name: impl Into<String>,
-        description: impl Into<String>,
-        delegations_disabled: bool,
-        commission_bps: u32,
-        signer: Address,
-        unjailed: bool,
-        initial_wei: impl Into<String>,
+        registration: CValidatorRegister,
     ) -> Result<ExchangeResponseStatus> {
-        let action = CValidatorRegister {
-            node_ip: node_ip.into(),
-            name: name.into(),
-            description: description.into(),
-            delegations_disabled,
-            commission_bps,
-            signer: format!("{:#x}", signer),
-            unjailed,
-            initial_wei: initial_wei.into(),
-        };
-        self.send_l1_action("cValidatorRegister", &action).await
+        self.send_l1_action("cValidatorRegister", &registration)
+            .await
     }
 
     /// Change validator profile
     ///
-    /// All parameters are optional - only provided values will be updated.
+    /// All fields are optional - only provided values will be updated.
+    ///
+    /// # Example
+    /// ```ignore
+    /// use hyperliquid_rust_sdk::types::actions::CValidatorChangeProfile;
+    ///
+    /// let update = CValidatorChangeProfile {
+    ///     node_ip: Some("192.168.1.2".to_string()),
+    ///     name: Some("New Name".to_string()),
+    ///     description: None,  // keep existing
+    ///     unjailed: None,     // keep existing
+    ///     disable_delegations: None,
+    ///     commission_bps: Some(300), // 3%
+    ///     signer: None,       // keep existing
+    /// };
+    /// exchange.c_validator_change_profile(update).await?;
+    /// ```
     pub async fn c_validator_change_profile(
         &self,
-        node_ip: Option<String>,
-        name: Option<String>,
-        description: Option<String>,
-        unjailed: Option<bool>,
-        disable_delegations: Option<bool>,
-        commission_bps: Option<u32>,
-        signer: Option<Address>,
+        profile: CValidatorChangeProfile,
     ) -> Result<ExchangeResponseStatus> {
-        let action = CValidatorChangeProfile {
-            node_ip,
-            name,
-            description,
-            unjailed,
-            disable_delegations,
-            commission_bps,
-            signer: signer.map(|s| format!("{:#x}", s)),
-        };
-        self.send_l1_action("cValidatorChangeProfile", &action)
+        self.send_l1_action("cValidatorChangeProfile", &profile)
             .await
     }
 

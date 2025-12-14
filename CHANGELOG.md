@@ -126,6 +126,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Added `Clone` derive to `MarginSummary` type
 - Added `Clone` derive to `EvmContract` type
+- **BREAKING**: `perp_deploy_register_asset()` now accepts `PerpDeployRegisterAsset` struct instead of 8 individual arguments ([#20](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/20))
+- **BREAKING**: `c_validator_register()` now accepts `CValidatorRegister` struct instead of 8 individual arguments ([#20](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/20))
+- **BREAKING**: `c_validator_change_profile()` now accepts `CValidatorChangeProfile` struct instead of 7 individual arguments ([#20](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/20))
 - Aligned library import name with crate name - now import as `hyperliquid_rust_sdk` instead of `ferrofluid` ([#10](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/10))
 - **BREAKING**: `Portfolio` type changed from a struct to `Vec<(String, PortfolioPeriodData)>` to match actual API response format which returns time-series data per period (day, week, month, allTime, etc.)
 - **BREAKING**: `SpotMetaAndAssetCtxs` type restructured to correctly deserialize the API's `[{universe, tokens}, [...assetCtxs]]` tuple format; now has `meta: SpotMeta` and `asset_ctxs: Vec<SpotAssetContext>` fields
