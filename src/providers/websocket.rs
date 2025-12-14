@@ -752,18 +752,21 @@ impl ManagedWsProvider {
                 // Check max attempts
                 if let Some(max) = self.config.max_reconnect_attempts {
                     if reconnect_attempts >= max {
-                        eprintln!("Max reconnection attempts ({}) reached", max);
+                        tracing::error!("Max reconnection attempts ({}) reached", max);
                         break;
                     }
                 }
 
-                println!("Attempting reconnection #{}", reconnect_attempts + 1);
+                tracing::info!("Attempting reconnection #{}", reconnect_attempts + 1);
 
                 match RawWsProvider::connect(self.network).await {
                     Ok(mut new_provider) => {
                         // Start reading before replaying subscriptions
                         if let Err(e) = new_provider.start_reading().await {
-                            eprintln!("Failed to start reading after reconnect: {}", e);
+                            tracing::warn!(
+                                "Failed to start reading after reconnect: {}",
+                                e
+                            );
                             continue;
                         }
 
@@ -773,7 +776,7 @@ impl ManagedWsProvider {
                             if let Err(e) =
                                 new_provider.subscribe(entry.subscription.clone()).await
                             {
-                                eprintln!("Failed to replay subscription: {}", e);
+                                tracing::warn!("Failed to replay subscription: {}", e);
                                 replay_errors += 1;
                             }
                         }
@@ -783,14 +786,14 @@ impl ManagedWsProvider {
                             *self.inner.lock().await = Some(new_provider);
                             reconnect_attempts = 0;
                             current_delay = self.config.reconnect_delay;
-                            println!(
+                            tracing::info!(
                                 "Reconnection successful, {} subscriptions replayed",
                                 self.subscriptions.len()
                             );
                         }
                     }
                     Err(e) => {
-                        eprintln!("Reconnection failed: {}", e);
+                        tracing::warn!("Reconnection failed: {}", e);
 
                         // Wait before next attempt
                         sleep(current_delay).await;
