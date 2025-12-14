@@ -140,6 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Refactored
 - Split `exchange.rs` (2234 lines) into module directory for better maintainability: `exchange/mod.rs`, `exchange/builder.rs`, `exchange/managed.rs` ([#32](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/32))
 - Replaced bare `.unwrap()` with `.expect()` for Mutex/RwLock and SystemTime operations to improve panic debugging ([#29](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/29))
+- Removed unused `created_at` field from `ManagedSubscription` struct in websocket provider ([#33](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/33))
 
 ### Fixed
 - Fixed doc tests in `symbols.rs` that used incorrect crate name `ferrofluid` instead of `hyperliquid_rust_sdk` ([#23](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/23))
