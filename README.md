@@ -23,7 +23,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hyperliquid-sdk-rs = "0.1.1"
+hyperliquid-sdk-rs = "0.1.2"
 ```
 
 ## Quick Start
