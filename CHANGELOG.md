@@ -122,6 +122,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `tests/action_types_test.rs` - EIP-712 type hashes, action serialization (36 tests)
 - Added `tests/websocket_types_test.rs` - Subscription and message serialization (34 tests)
 - Added `tests/info_provider_test.rs` - RateLimiter unit tests and optional live API tests (24 tests)
+- Added `tests/batcher_test.rs` - OrderBatcher batch processing, ALO priority, shutdown behavior (29 tests) ([#31](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/31))
+- Added `tests/nonce_test.rs` - NonceManager generation, isolation, validity, concurrency (30 tests) ([#31](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/31))
 
 ### Changed
 - Added `Clone` derive to `MarginSummary` type
