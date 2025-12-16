@@ -780,7 +780,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         use rand::Rng;
 
         // Generate random key
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let mut key_bytes = [0u8; 32];
         rng.fill(&mut key_bytes);
         let key_hex = hex::encode(key_bytes);
