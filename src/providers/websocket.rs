@@ -1,7 +1,7 @@
 //! WebSocket provider for real-time market data and user events
 
 use std::sync::{
-    atomic::{AtomicU32, Ordering},
+    atomic::{AtomicBool, AtomicU32, Ordering},
     Arc,
 };
 
@@ -46,6 +46,7 @@ pub struct RawWsProvider {
     _network: Network,
     ws: Option<WebSocket<WsStream>>,
     ws_write: Option<Arc<Mutex<WsWrite>>>,
+    connection_alive: Arc<AtomicBool>,
     subscriptions: Arc<DashMap<SubscriptionId, SubscriptionHandle>>,
     next_id: Arc<AtomicU32>,
     message_tx: Option<UnboundedSender<String>>,
@@ -53,6 +54,14 @@ pub struct RawWsProvider {
 }
 
 impl RawWsProvider {
+    fn compute_is_connected(
+        has_ws: bool,
+        has_ws_write: bool,
+        connection_alive: bool,
+    ) -> bool {
+        connection_alive && (has_ws || has_ws_write)
+    }
+
     async fn write_text_frame(
         &mut self,
         payload: String,
@@ -88,6 +97,7 @@ impl RawWsProvider {
         let ws = Self::establish_connection(url).await?;
         let subscriptions = Arc::new(DashMap::new());
         let next_id = Arc::new(AtomicU32::new(1));
+        let connection_alive = Arc::new(AtomicBool::new(true));
 
         // Create message routing channel
         let (message_tx, message_rx) = mpsc::unbounded_channel();
@@ -102,6 +112,7 @@ impl RawWsProvider {
             _network: network,
             ws: Some(ws),
             ws_write: None,
+            connection_alive,
             subscriptions,
             next_id,
             message_tx: Some(message_tx),
@@ -344,12 +355,19 @@ impl RawWsProvider {
 
     /// Check if connected
     pub fn is_connected(&self) -> bool {
-        self.ws.is_some() || self.ws_write.is_some()
+        Self::compute_is_connected(
+            self.ws.is_some(),
+            self.ws_write.is_some(),
+            self.connection_alive.load(Ordering::SeqCst),
+        )
     }
 
     /// Start reading messages (must be called after connecting)
     pub async fn start_reading(&mut self) -> Result<(), HyperliquidError> {
-        if self.ws.is_none() && self.ws_write.is_some() {
+        if self.ws.is_none()
+            && self.ws_write.is_some()
+            && self.connection_alive.load(Ordering::SeqCst)
+        {
             return Ok(());
         }
 
@@ -365,6 +383,8 @@ impl RawWsProvider {
         let (mut ws_read, ws_write) = ws.split(split);
         let ws_write = Arc::new(Mutex::new(ws_write));
         self.ws_write = Some(ws_write.clone());
+        self.connection_alive.store(true, Ordering::SeqCst);
+        let connection_alive = self.connection_alive.clone();
 
         tokio::spawn(async move {
             while let Ok(frame) = ws_read
@@ -389,6 +409,8 @@ impl RawWsProvider {
                     _ => {}
                 }
             }
+
+            connection_alive.store(false, Ordering::SeqCst);
         });
 
         Ok(())
@@ -419,6 +441,7 @@ impl RawWsProvider {
 
 impl Drop for RawWsProvider {
     fn drop(&mut self) {
+        self.connection_alive.store(false, Ordering::SeqCst);
         // Clean shutdown
         if let Some(handle) = self.task_handle.take() {
             handle.abort();
@@ -856,6 +879,25 @@ impl ManagedWsProvider {
 // Note: Background tasks (keepalive and reconnect loops) will automatically
 // terminate when all Arc references to the provider are dropped, since they
 // hold Arc<Self> and will exit when is_connected() returns false.
+
+#[cfg(test)]
+mod tests {
+    use super::RawWsProvider;
+
+    #[test]
+    fn is_connected_false_when_reader_exited_but_writer_handle_still_exists() {
+        assert!(
+            !RawWsProvider::compute_is_connected(
+                false, true, false,
+            )
+        );
+    }
+
+    #[test]
+    fn is_connected_true_for_live_split_connection() {
+        assert!(RawWsProvider::compute_is_connected(false, true, true));
+    }
+}
 
 // Re-export for backwards compatibility
 pub use RawWsProvider as WsProvider;
