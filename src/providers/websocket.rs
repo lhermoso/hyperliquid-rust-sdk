@@ -1,17 +1,23 @@
 //! WebSocket provider for real-time market data and user events
 
 use std::sync::{
-    atomic::{AtomicU32, Ordering},
+    atomic::{AtomicBool, AtomicU32, Ordering},
     Arc,
 };
 
 use alloy::primitives::Address;
 use dashmap::DashMap;
-use fastwebsockets::{handshake, Frame, OpCode, Role, WebSocket};
+use fastwebsockets::{handshake, Frame, OpCode, Role, WebSocket, WebSocketWrite};
 use http_body_util::Empty;
 use hyper::{body::Bytes, header, upgrade::Upgraded, Request, StatusCode};
 use hyper_util::rt::TokioIo;
-use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use tokio::{
+    io::{split, WriteHalf},
+    sync::{
+        mpsc::{self, UnboundedReceiver, UnboundedSender},
+        Mutex,
+    },
+};
 
 use crate::{
     errors::HyperliquidError,
@@ -21,6 +27,8 @@ use crate::{
 };
 
 pub type SubscriptionId = u32;
+type WsStream = TokioIo<Upgraded>;
+type WsWrite = WebSocketWrite<WriteHalf<WsStream>>;
 
 #[derive(Clone)]
 struct SubscriptionHandle {
@@ -36,7 +44,9 @@ struct SubscriptionHandle {
 /// - No automatic reconnection (user controls retry logic)
 pub struct RawWsProvider {
     _network: Network,
-    ws: Option<WebSocket<TokioIo<Upgraded>>>,
+    ws: Option<WebSocket<WsStream>>,
+    ws_write: Option<Arc<Mutex<WsWrite>>>,
+    connection_alive: Arc<AtomicBool>,
     subscriptions: Arc<DashMap<SubscriptionId, SubscriptionHandle>>,
     next_id: Arc<AtomicU32>,
     message_tx: Option<UnboundedSender<String>>,
@@ -44,6 +54,39 @@ pub struct RawWsProvider {
 }
 
 impl RawWsProvider {
+    fn compute_is_connected(
+        has_ws: bool,
+        has_ws_write: bool,
+        connection_alive: bool,
+    ) -> bool {
+        connection_alive && (has_ws || has_ws_write)
+    }
+
+    async fn write_text_frame(
+        &mut self,
+        payload: String,
+        action: &str,
+    ) -> Result<(), HyperliquidError> {
+        let frame = Frame::text(payload.into_bytes().into());
+
+        if let Some(ws) = self.ws.as_mut() {
+            ws.write_frame(frame).await.map_err(|e| {
+                HyperliquidError::WebSocket(format!("Failed to send {}: {}", action, e))
+            })?;
+            return Ok(());
+        }
+
+        if let Some(ws_write) = self.ws_write.clone() {
+            let mut ws = ws_write.lock().await;
+            ws.write_frame(frame).await.map_err(|e| {
+                HyperliquidError::WebSocket(format!("Failed to send {}: {}", action, e))
+            })?;
+            return Ok(());
+        }
+
+        Err(HyperliquidError::WebSocket("Not connected".to_string()))
+    }
+
     /// Connect to Hyperliquid WebSocket
     pub async fn connect(network: Network) -> Result<Self, HyperliquidError> {
         let url = match network {
@@ -54,6 +97,7 @@ impl RawWsProvider {
         let ws = Self::establish_connection(url).await?;
         let subscriptions = Arc::new(DashMap::new());
         let next_id = Arc::new(AtomicU32::new(1));
+        let connection_alive = Arc::new(AtomicBool::new(true));
 
         // Create message routing channel
         let (message_tx, message_rx) = mpsc::unbounded_channel();
@@ -67,6 +111,8 @@ impl RawWsProvider {
         Ok(Self {
             _network: network,
             ws: Some(ws),
+            ws_write: None,
+            connection_alive,
             subscriptions,
             next_id,
             message_tx: Some(message_tx),
@@ -76,7 +122,7 @@ impl RawWsProvider {
 
     async fn establish_connection(
         url: &str,
-    ) -> Result<WebSocket<TokioIo<Upgraded>>, HyperliquidError> {
+    ) -> Result<WebSocket<WsStream>, HyperliquidError> {
         use hyper_rustls::HttpsConnectorBuilder;
         use hyper_util::client::legacy::Client;
 
@@ -268,21 +314,11 @@ impl RawWsProvider {
         &mut self,
         subscription: Subscription,
     ) -> Result<(SubscriptionId, UnboundedReceiver<Message>), HyperliquidError> {
-        let ws = self
-            .ws
-            .as_mut()
-            .ok_or_else(|| HyperliquidError::WebSocket("Not connected".to_string()))?;
-
         // Send subscription request
         let request = WsRequest::subscribe(subscription.clone());
         let payload = serde_json::to_string(&request)
             .map_err(|e| HyperliquidError::Serialize(e.to_string()))?;
-
-        ws.write_frame(Frame::text(payload.into_bytes().into()))
-            .await
-            .map_err(|e| {
-                HyperliquidError::WebSocket(format!("Failed to send subscription: {}", e))
-            })?;
+        self.write_text_frame(payload, "subscription").await?;
 
         // Create channel for this subscription
         let (tx, rx) = mpsc::unbounded_channel();
@@ -300,22 +336,10 @@ impl RawWsProvider {
         id: SubscriptionId,
     ) -> Result<(), HyperliquidError> {
         if let Some((_, handle)) = self.subscriptions.remove(&id) {
-            let ws = self.ws.as_mut().ok_or_else(|| {
-                HyperliquidError::WebSocket("Not connected".to_string())
-            })?;
-
             let request = WsRequest::unsubscribe(handle.subscription);
             let payload = serde_json::to_string(&request)
                 .map_err(|e| HyperliquidError::Serialize(e.to_string()))?;
-
-            ws.write_frame(Frame::text(payload.into_bytes().into()))
-                .await
-                .map_err(|e| {
-                    HyperliquidError::WebSocket(format!(
-                        "Failed to send unsubscribe: {}",
-                        e
-                    ))
-                })?;
+            self.write_text_frame(payload, "unsubscribe").await?;
         }
 
         Ok(())
@@ -323,32 +347,31 @@ impl RawWsProvider {
 
     /// Send a ping to keep connection alive
     pub async fn ping(&mut self) -> Result<(), HyperliquidError> {
-        let ws = self
-            .ws
-            .as_mut()
-            .ok_or_else(|| HyperliquidError::WebSocket("Not connected".to_string()))?;
-
         let request = WsRequest::ping();
         let payload = serde_json::to_string(&request)
             .map_err(|e| HyperliquidError::Serialize(e.to_string()))?;
-
-        ws.write_frame(Frame::text(payload.into_bytes().into()))
-            .await
-            .map_err(|e| {
-                HyperliquidError::WebSocket(format!("Failed to send ping: {}", e))
-            })?;
-
-        Ok(())
+        self.write_text_frame(payload, "ping").await
     }
 
     /// Check if connected
     pub fn is_connected(&self) -> bool {
-        self.ws.is_some()
+        Self::compute_is_connected(
+            self.ws.is_some(),
+            self.ws_write.is_some(),
+            self.connection_alive.load(Ordering::SeqCst),
+        )
     }
 
     /// Start reading messages (must be called after connecting)
     pub async fn start_reading(&mut self) -> Result<(), HyperliquidError> {
-        let mut ws = self
+        if self.ws.is_none()
+            && self.ws_write.is_some()
+            && self.connection_alive.load(Ordering::SeqCst)
+        {
+            return Ok(());
+        }
+
+        let ws = self
             .ws
             .take()
             .ok_or_else(|| HyperliquidError::WebSocket("Not connected".to_string()))?;
@@ -357,8 +380,23 @@ impl RawWsProvider {
             HyperliquidError::WebSocket("Message channel not initialized".to_string())
         })?;
 
+        let (mut ws_read, ws_write) = ws.split(split);
+        let ws_write = Arc::new(Mutex::new(ws_write));
+        self.ws_write = Some(ws_write.clone());
+        self.connection_alive.store(true, Ordering::SeqCst);
+        let connection_alive = self.connection_alive.clone();
+
         tokio::spawn(async move {
-            while let Ok(frame) = ws.read_frame().await {
+            while let Ok(frame) = ws_read
+                .read_frame(&mut |frame| {
+                    let ws_write = ws_write.clone();
+                    async move {
+                        let mut ws = ws_write.lock().await;
+                        ws.write_frame(frame).await
+                    }
+                })
+                .await
+            {
                 match frame.opcode {
                     OpCode::Text => {
                         if let Ok(text) = String::from_utf8(frame.payload.to_vec()) {
@@ -371,6 +409,8 @@ impl RawWsProvider {
                     _ => {}
                 }
             }
+
+            connection_alive.store(false, Ordering::SeqCst);
         });
 
         Ok(())
@@ -401,6 +441,7 @@ impl RawWsProvider {
 
 impl Drop for RawWsProvider {
     fn drop(&mut self) {
+        self.connection_alive.store(false, Ordering::SeqCst);
         // Clean shutdown
         if let Some(handle) = self.task_handle.take() {
             handle.abort();
@@ -411,7 +452,6 @@ impl Drop for RawWsProvider {
 // ==================== Enhanced WebSocket Provider ====================
 
 use std::time::Duration;
-use tokio::sync::Mutex;
 use tokio::time::sleep;
 
 /// Configuration for managed WebSocket provider
@@ -758,15 +798,6 @@ impl ManagedWsProvider {
 
                 match RawWsProvider::connect(self.network).await {
                     Ok(mut new_provider) => {
-                        // Start reading before replaying subscriptions
-                        if let Err(e) = new_provider.start_reading().await {
-                            tracing::warn!(
-                                "Failed to start reading after reconnect: {}",
-                                e
-                            );
-                            continue;
-                        }
-
                         // Replay all subscriptions
                         let mut replay_errors = 0;
                         for entry in self.subscriptions.iter() {
@@ -778,16 +809,46 @@ impl ManagedWsProvider {
                             }
                         }
 
-                        if replay_errors == 0 {
-                            // Success! Reset counters
-                            *self.inner.lock().await = Some(new_provider);
-                            reconnect_attempts = 0;
-                            current_delay = self.config.reconnect_delay;
-                            tracing::info!(
-                                "Reconnection successful, {} subscriptions replayed",
-                                self.subscriptions.len()
+                        if replay_errors > 0 {
+                            tracing::warn!(
+                                "Reconnection replay failed for {} subscription(s)",
+                                replay_errors
                             );
+                            sleep(current_delay).await;
+                            reconnect_attempts += 1;
+                            if self.config.exponential_backoff {
+                                current_delay = std::cmp::min(
+                                    current_delay * 2,
+                                    self.config.max_reconnect_delay,
+                                );
+                            }
+                            continue;
                         }
+
+                        if let Err(e) = new_provider.start_reading().await {
+                            tracing::warn!(
+                                "Failed to start reading after reconnect: {}",
+                                e
+                            );
+                            sleep(current_delay).await;
+                            reconnect_attempts += 1;
+                            if self.config.exponential_backoff {
+                                current_delay = std::cmp::min(
+                                    current_delay * 2,
+                                    self.config.max_reconnect_delay,
+                                );
+                            }
+                            continue;
+                        }
+
+                        // Success! Reset counters
+                        *self.inner.lock().await = Some(new_provider);
+                        reconnect_attempts = 0;
+                        current_delay = self.config.reconnect_delay;
+                        tracing::info!(
+                            "Reconnection successful, {} subscriptions replayed",
+                            self.subscriptions.len()
+                        );
                     }
                     Err(e) => {
                         tracing::warn!("Reconnection failed: {}", e);
@@ -818,6 +879,25 @@ impl ManagedWsProvider {
 // Note: Background tasks (keepalive and reconnect loops) will automatically
 // terminate when all Arc references to the provider are dropped, since they
 // hold Arc<Self> and will exit when is_connected() returns false.
+
+#[cfg(test)]
+mod tests {
+    use super::RawWsProvider;
+
+    #[test]
+    fn is_connected_false_when_reader_exited_but_writer_handle_still_exists() {
+        assert!(
+            !RawWsProvider::compute_is_connected(
+                false, true, false,
+            )
+        );
+    }
+
+    #[test]
+    fn is_connected_true_for_live_split_connection() {
+        assert!(RawWsProvider::compute_is_connected(false, true, true));
+    }
+}
 
 // Re-export for backwards compatibility
 pub use RawWsProvider as WsProvider;

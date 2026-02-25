@@ -22,7 +22,7 @@ http-body-util = "0.1"
 http = "1"
 
 # WebSocket
-fastwebsockets = { version = "0.6", features = ["upgrade", "simd"] }
+fastwebsockets = { version = "0.6", features = ["upgrade", "simd", "unstable-split"] }
 rustls = { version = "0.23", features = ["aws_lc_rs"] }
 
 
