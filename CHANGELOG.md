@@ -146,6 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed unused `created_at` field from `ManagedSubscription` struct in websocket provider ([#33](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/33))
 
 ### Fixed
+- Fixed `usd_class_transfer` using wrong signing method (L1 signing instead of EIP-712 user signing), missing required fields (`hyperliquidChain`, `signatureChainId`, `nonce`), and incorrectly including `vaultAddress` in the payload ([#40](https://github.com/lhermoso/hyperliquid-rust-sdk/issues/40))
 - Fixed doc tests in `symbols.rs` that used incorrect crate name `ferrofluid` instead of `hyperliquid_rust_sdk` ([#23](https://github.com/lhermoso/hyperliquid-rust-sdk/pull/23))
 - Fixed `portfolio(user)` endpoint deserialization - API returns array of time period tuples, not a flat object
 - Fixed `spot_meta_and_asset_ctxs()` endpoint deserialization - API returns a 2-element tuple array, not a single object with all fields

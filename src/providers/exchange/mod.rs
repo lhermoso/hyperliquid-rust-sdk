@@ -956,11 +956,22 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         amount: &str,
         to_perp: bool,
     ) -> Result<ExchangeResponseStatus> {
+        let (chain_id, _) = self.infer_network();
+        let chain = if chain_id == CHAIN_ID_MAINNET {
+            "Mainnet"
+        } else {
+            "Testnet"
+        };
+
         let action = UsdClassTransfer {
+            signature_chain_id: chain_id,
+            hyperliquid_chain: chain.to_string(),
             amount: amount.to_string(),
             to_perp,
+            nonce: Self::current_nonce(),
         };
-        self.send_l1_action("usdClassTransfer", &action).await
+
+        self.send_user_action(&action).await
     }
 
     // ==================== Phase 2 New Actions ====================
@@ -1093,7 +1104,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             v: 27,
         };
 
-        self.post(action_with_type, signature, nonce).await
+        self.post(action_with_type, signature, nonce, true).await
     }
 
     /// Enable DEX abstraction for the current agent.
@@ -1655,7 +1666,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             action_value
         };
 
-        self.post(final_action, signature, nonce).await
+        self.post(final_action, signature, nonce, true).await
     }
 
     async fn send_user_action<T: HyperliquidAction + Serialize>(
@@ -1688,6 +1699,7 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
             "Withdraw" => "withdraw3",
             "SpotSend" => "spotSend",
             "ApproveBuilderFee" => "approveBuilderFee",
+            "UsdClassTransfer" => "usdClassTransfer",
             _ => action_type,
         };
 
@@ -1697,7 +1709,8 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         }
 
         // Send directly without L1 wrapping for user actions
-        self.post(action_value, signature, nonce).await
+        // User-signed actions do not include vaultAddress in the payload
+        self.post(action_value, signature, nonce, false).await
     }
 
     async fn post(
@@ -1705,10 +1718,11 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
         action: Value,
         signature: HyperliquidSignature,
         nonce: u64,
+        include_vault_address: bool,
     ) -> Result<ExchangeResponseStatus> {
         // Hyperliquid expects signature as an object with r, s, v fields
         // not as a concatenated hex string
-        let payload = json!({
+        let mut payload = json!({
             "action": action,
             "signature": {
                 "r": format!("0x{:064x}", signature.r),
@@ -1716,8 +1730,19 @@ impl<S: HyperliquidSigner> RawExchangeProvider<S> {
                 "v": signature.v,
             },
             "nonce": nonce,
-            "vaultAddress": self.vault_address,
         });
+
+        // Only include vaultAddress for L1/agent actions (orders, cancels, etc.)
+        // User-signed actions (usdClassTransfer, usdSend, withdraw, etc.) must not include it
+        if include_vault_address {
+            if let Value::Object(ref mut map) = payload {
+                map.insert(
+                    "vaultAddress".to_string(),
+                    serde_json::to_value(&self.vault_address)
+                        .unwrap_or(Value::Null),
+                );
+            }
+        }
 
         let body = Full::new(Bytes::from(serde_json::to_vec(&payload)?));
         let request = Request::builder()
