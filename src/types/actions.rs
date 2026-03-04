@@ -321,8 +321,34 @@ pub struct SubAccountSpotTransfer {
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UsdClassTransfer {
+    #[serde(serialize_with = "serialize_chain_id")]
+    pub signature_chain_id: u64,
+    pub hyperliquid_chain: String,
     pub amount: String,
     pub to_perp: bool,
+    pub nonce: u64,
+}
+
+impl crate::types::eip712::HyperliquidAction for UsdClassTransfer {
+    const TYPE_STRING: &'static str =
+        "UsdClassTransfer(string hyperliquidChain,string amount,bool toPerp,uint64 nonce)";
+    const USE_PREFIX: bool = true;
+
+    fn chain_id(&self) -> Option<u64> {
+        Some(self.signature_chain_id)
+    }
+
+    fn encode_data(&self) -> Vec<u8> {
+        use crate::types::eip712::encode_value;
+        let mut encoded = Vec::new();
+        encoded.extend_from_slice(&Self::type_hash()[..]);
+        encoded.extend_from_slice(&encode_value(&self.hyperliquid_chain)[..]);
+        encoded.extend_from_slice(&encode_value(&self.amount)[..]);
+        // bool is encoded as uint256 (0 or 1)
+        encoded.extend_from_slice(&encode_value(&(self.to_perp as u64))[..]);
+        encoded.extend_from_slice(&encode_value(&self.nonce)[..]);
+        encoded
+    }
 }
 
 // ==================== Phase 2 New Actions ====================
